@@ -1,0 +1,16 @@
+go 1.18
+
+use (
+	./cache
+	./importers/gcp
+    ./importers/common
+    ./importers/targz
+    ./importers/wsus
+    ./importers/windows
+    ./common
+    ./core
+    ./exporters/postgres
+    ./processors/local
+    ./storage/cloudspanner
+    ./storage/postgres
+)
