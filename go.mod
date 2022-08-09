@@ -5,15 +5,6 @@ go 1.18
 require (
 	cloud.google.com/go/spanner v1.32.0
 	github.com/golang/glog v1.0.0
-	github.com/google/hashr/core/hashr v1.0.0
-	github.com/google/hashr/exporters/postgres v1.0.0
-	github.com/google/hashr/importers/gcp v1.0.0
-	github.com/google/hashr/importers/targz v1.0.0
-	github.com/google/hashr/importers/windows v1.0.0
-	github.com/google/hashr/importers/wsus v1.0.0
-	github.com/google/hashr/processors/local v1.0.0
-	github.com/google/hashr/storage/cloudspanner v1.0.0
-	github.com/google/hashr/storage/postgres v1.0.0
 	google.golang.org/api v0.80.0
 )
 
