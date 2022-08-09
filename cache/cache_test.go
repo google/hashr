@@ -25,7 +25,7 @@ import (
 	"github.com/google/hashr/common"
 	"google.golang.org/protobuf/proto"
 
-	cpb "github.com/google/hashr/cache/proto/cachepb"
+	cpb "github.com/google/hashr/cache/proto"
 	tpb "google.golang.org/protobuf/types/known/timestamppb"
 )
 

@@ -28,7 +28,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	cpb "github.com/google/hashr/cache/proto/cachepb"
+	cpb "github.com/google/hashr/cache/proto"
 )
 
 func readJSON(extraction *common.Extraction) ([]common.Sample, error) {
