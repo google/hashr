@@ -1,4 +1,8 @@
-# hashR: Generate your own set of hashes 
+# HashR: Generate your own set of hashes 
+
+<img src="docs/assets/HashR.png" width="800">
+
+## About 
 
 HashR allows you to build your own hash sets based on your data sources. It's a tool that extracts files and hashes out of input sources (e.g. raw disk image, GCE disk image, ISO file, Windows update package, .tar.gz file, etc.).
 
