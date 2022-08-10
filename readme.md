@@ -108,7 +108,7 @@ HashR needs to store information about processed sources. It also stores additio
 
 #### Setting up PostgreSQL storage 
 
-There are many ways how to you can run and maintain your PostgreSQL instance, one of the simplest way would be to run it in a Docker container. Follow steps below to set up a PostgreSQL Docker container.
+There are many ways you can run and maintain your PostgreSQL instance, one of the simplest ways would be to run it in a Docker container. Follow the steps below to set up a PostgreSQL Docker container.
 
 Step 1: Pull the PostgreSQL docker image.
 
@@ -122,7 +122,7 @@ Step 2: Initialize and run the PostgreSQL container in the background. Make sure
 docker run -itd -e POSTGRES_DB=hashr -e POSTGRES_USER=hashr -e POSTGRES_PASSWORD=hashr -p 5432:5432 -v /data:/var/lib/postgresql/data --name hashr_postgresql postgres
 ```
 
-Step 3: Create table that will be used to store processing jobs.
+Step 3: Create a table that will be used to store processing jobs.
 
 ``` shell
 cat scripts/CreateJobsTable.sql | docker exec -i hashr_postgresql psql -U hashr -d hashr
@@ -132,9 +132,9 @@ In order to use PostgreSQL to store information about processing tasks you need 
 
 #### Setting up Cloud Spanner
 
-You can choose the store the data about processing jobs in Cloud Spanner. You'll need a Google Cloud project for that. Main advantage of this setup is that you can easily create dashboard(s) using [Google Data Studio](https://datastudio.google.com/) and directly connect to the Cloud Spanner instance. That allows you monitoring and debugging without running queries against your PostgreSQL instance. 
+You can choose the store the data about processing jobs in Cloud Spanner. You'll need a Google Cloud project for that. The main advantage of this setup is that you can easily create dashboard(s) using [Google Data Studio](https://datastudio.google.com/) and directly connect to the Cloud Spanner instance that allows monitoring and debugging without running queries against your PostgreSQL instance.
 
-Assuming that you `gcloud` tool configured with your target hashr GCP project you'll need to follow few steps to enable Cloud Spanner.
+Assuming that your `gcloud` tool is configured with your target hashr GCP project, you'll need to follow the steps below to enable Cloud Spanner.
 
 Create HashR service account:
 
@@ -187,7 +187,7 @@ In order to specify which importer you want to run you should use the `-importer
 
 #### TarGz 
 
-This is a simple importer that traverses repository and looks for `.tar.gz` files. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+This is a simple importer that traverses repositories and looks for `.tar.gz` files. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
 
 1. `-targz_repo_path` which should point to the path on the local file system that contains `.tar.gz` files
 
@@ -305,7 +305,7 @@ One ISO file can contain multiple WIM images:
 1. Windows10Education
 1. Windows10EducationN
 1. Windows10ProN
-1. etc.. 
+1. etc.
 
 This importer will extract files from all images it can find in the `install.wim` file.
 
@@ -320,7 +320,7 @@ This importer utilizes 7z to recursively extract contents of Windows Update pack
 
 ### Setting up Postgres exporter 
 
-Postgres exporter allows to send hashes, file metadata and the actual content of the file to a PostgreSQL instance. For best performance it's advised to set it up on a separate and dedicated machine. 
+Postgres exporter allows sending of hashes, file metadata and the actual content of the file to a PostgreSQL instance. For best performance it's advised to set it up on a separate and dedicated machine. 
 If you did set up PostgreSQL while choosing the processing jobs storage you're almost good to go, just run the following command to create the required tables: 
 ``` shell
 cat scripts/CreatePostgresExporterTables.sql | docker exec -i hashr_postgresql psql -U hashr -d hashr
