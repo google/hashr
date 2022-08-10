@@ -1,6 +1,26 @@
 # HashR: Generate your own set of hashes 
 
-<img src="docs/assets/HashR.png" width="800">
+<img src="docs/assets/HashR.png" width="800"> <br><br>
+
+## Table of Contents
+
+- [HashR: Generate your own set of hashes](#hashr-generate-your-own-set-of-hashes)
+  - [Table of Contents](#table-of-contents)
+  - [About](#about)
+  - [Requirements](#requirements)
+  - [Building HashR binary and running tests](#building-hashr-binary-and-running-tests)
+  - [Setting up HashR](#setting-up-hashr)
+    - [OS configuration & required 3rd party tooling](#os-configuration--required-3rd-party-tooling)
+    - [Setting up storage for processing tasks](#setting-up-storage-for-processing-tasks)
+      - [Setting up PostgreSQL storage](#setting-up-postgresql-storage)
+      - [Setting up Cloud Spanner](#setting-up-cloud-spanner)
+    - [Setting up importers](#setting-up-importers)
+      - [TarGz](#targz)
+      - [GCP](#gcp)
+      - [Windows](#windows)
+      - [WSUS](#wsus)
+    - [Setting up Postgres exporter](#setting-up-postgres-exporter)
+    - [Additional flags](#additional-flags)
 
 ## About 
 
@@ -31,6 +51,26 @@ HashR requires Linux OS to run, this can be a physical, virtual or cloud machine
 1. 8-16 cores 
 2. 128GB memory 
 3. 2TB fast local storage (SSDs preferred)
+
+## Building HashR binary and running tests 
+
+In order to build a hashr binary run the following command: 
+
+``` shell
+env GOOS=linux GOARCH=amd64 go build hashr.go
+```
+
+In order to run tests for the core hashR package you need to run Spanner emulator: 
+
+``` shell
+gcloud emulators spanner start
+```
+
+Then to execute all tests run the following command:
+
+``` shell
+go test -timeout 2m ./...
+```
 
 ## Setting up HashR
 
