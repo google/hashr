@@ -29,15 +29,15 @@ HashR allows you to build your own hash sets based on your data sources. It's a 
 HashR consists of the following components:
 
 1. Importers, which are responsible for copying the source to local storage and doing any required preprocessing.
-2. Core, which takes care of extracting the content from the source using image_export.py (Plaso), caching and repository level deduplication and preparing the extracted files for the exporters.
-3. Exporters, which are responsible for exporting files, metadata and hashes to given data sinks. Currently the main exporter is the Postgres exporter.
+1. Core, which takes care of extracting the content from the source using image_export.py (Plaso), caching and repository level deduplication and preparing the extracted files for the exporters.
+1. Exporters, which are responsible for exporting files, metadata and hashes to given data sinks. Currently the main exporter is the Postgres exporter.
 
 Currently implemented importers: 
 
 1. TarGz, which extracts files from .tar.gz archives. 
-2. GCP, which extracts file from base GCP disk [images](https://cloud.google.com/compute/docs/images)
-3. Windows, which extracts files from Windows installation media in ISO-13346 format. 
-4. WSUS, which extracts files from Windows Update packages.  
+1. GCP, which extracts file from base GCP disk [images](https://cloud.google.com/compute/docs/images)
+1. Windows, which extracts files from Windows installation media in ISO-13346 format. 
+1. WSUS, which extracts files from Windows Update packages.  
 
 Once files are extracted and hashed results will be passed to the exporter, currently the only available exporter is PostgreSQL. 
 
@@ -49,8 +49,8 @@ You can choose which importers you want to run, each one have different requirem
 HashR requires Linux OS to run, this can be a physical, virtual or cloud machine. Below are optimal hardware requirements: 
 
 1. 8-16 cores 
-2. 128GB memory 
-3. 2TB fast local storage (SSDs preferred)
+1. 128GB memory 
+1. 2TB fast local storage (SSDs preferred)
 
 ## Building HashR binary and running tests 
 
@@ -85,7 +85,7 @@ docker pull log2timeline/plaso
 We also need two additional tools installed on the machine running HashR:
 
 1. mmls, which is part of Sleuthkit, to list volumes on disk image 
-2. 7z, which is used by WSUS importer for recursive extraction in Windows Update packages 
+1. 7z, which is used by WSUS importer for recursive extraction in Windows Update packages 
 
 You can install both with the following command: 
 
@@ -104,7 +104,7 @@ hashr ALL = (root) NOPASSWD: /bin/mount,/bin/umount,/sbin/losetup,/bin/rm
 HashR needs to store information about processed sources. It also stores additional telemetry about processing tasks: processing times, number of extracted files, etc. You can choose between using:
 
 1. PostgreSQL 
-2. Cloud (GCP) Spanner
+1. Cloud (GCP) Spanner
 
 #### Setting up PostgreSQL storage 
 
@@ -196,11 +196,11 @@ This is a simple importer that traverses repositories and looks for `.tar.gz` fi
 This importer can extract files from GCP disk [images](https://cloud.google.com/compute/docs/images). This is done in few steps: 
 
 1. Check for new images in the target project (e.g. ubuntu-os-cloud)
-2. Copy new/unprocessed image to the hashR GCP project
-3. Run Cloud Build, which creates a temporary VM, runs dd on the copied image and saves the output to a .tar.gz file.
-4. Export raw_disk.tar.gz to the GCS bucket in hashR GCP project
-5. Copy raw_disk.tar.gz from GCS to local hashR storage
-6. Extract raw_disk.tar.gz and pass the disk image to Plaso 
+1. Copy new/unprocessed image to the hashR GCP project
+1. Run Cloud Build, which creates a temporary VM, runs dd on the copied image and saves the output to a .tar.gz file.
+1. Export raw_disk.tar.gz to the GCS bucket in hashR GCP project
+1. Copy raw_disk.tar.gz from GCS to local hashR storage
+1. Extract raw_disk.tar.gz and pass the disk image to Plaso 
 
 List of GCP projects containing public GCP images can be found [here](https://cloud.google.com/compute/docs/images/os-details#general-info). In order to use this importer you need to have a GCP project and follow these steps: 
 
@@ -293,8 +293,8 @@ gcloud projects add-iam-policy-binding <project_name> \
 To use this importer you need to specify the following flag(s): 
 
 1. `-gcpProjects` which is a comma separated list of cloud projects containing disk images. If you'd like to import public images take a look [here](https://cloud.google.com/compute/docs/images/os-details#general-info)
-2. `-hashrGCPProject` GCP project that will be used to store copy of disk images for processing and also run Cloud Build 
-3. `-hashrGCSBucket` GCS bucket that will be used to store output of Cloud Build (disk images in .tar.gz format)
+1. `-hashrGCPProject` GCP project that will be used to store copy of disk images for processing and also run Cloud Build 
+1. `-hashrGCSBucket` GCS bucket that will be used to store output of Cloud Build (disk images in .tar.gz format)
 
 #### Windows 
 
@@ -302,10 +302,10 @@ This importer extracts files from official Windows installation media in ISO-133
 One ISO file can contain multiple WIM images: 
 
 1. Windows10ProEducation
-2. Windows10Education
-3. Windows10EducationN
-4. Windows10ProN
-5. etc.
+1. Windows10Education
+1. Windows10EducationN
+1. Windows10ProN
+1. etc.
 
 This importer will extract files from all images it can find in the `install.wim` file.
 
@@ -314,13 +314,13 @@ This importer will extract files from all images it can find in the `install.wim
 This importer utilizes 7z to recursively extract contents of Windows Update packages. It will look for Windows Update files in the provided GCS bucket, easiest way to automatically update the GCS bucket with new updates would be to do the following: 
 
 1. Set up GCE VM running Windows Server in hashr GCP project. 
-2. Configure it with WSUS role, select Windows Update packages that you'd like to process
-3. Configure WSUS to automatically approve and download updates to local storage 
-4. Set up a Windows task to automatically sync content of the local storage to the GCS bucket: `gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/` (remember to adjust the paths)
+1. Configure it with WSUS role, select Windows Update packages that you'd like to process
+1. Configure WSUS to automatically approve and download updates to local storage 
+1. Set up a Windows task to automatically sync content of the local storage to the GCS bucket: `gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/` (remember to adjust the paths)
 
 ### Setting up Postgres exporter 
 
-Postgres exporter allows sending of hashes, file metadata, and the actual content of the file to a PostgreSQL instance. For best performance it's advised to set it up on a separate and dedicated machine. 
+Postgres exporter allows sending of hashes, file metadata and the actual content of the file to a PostgreSQL instance. For best performance it's advised to set it up on a separate and dedicated machine. 
 If you did set up PostgreSQL while choosing the processing jobs storage you're almost good to go, just run the following command to create the required tables: 
 ``` shell
 cat scripts/CreatePostgresExporterTables.sql | docker exec -i hashr_postgresql psql -U hashr -d hashr
@@ -334,10 +334,10 @@ In order for the Postgres exporter to work you need to set the following flags: 
 ### Additional flags
 
 1. `-processingWorkerCount`: This flag controls number of parallel processing workers. Processing is CPU and I/O heavy, during my testing I found that having 2 workers is the most optimal solution. 
-2. `-cacheDir`: Location of local cache used for deduplication, it's advised to change that from `/tmp` to e.g. home directory of the user that will be running hashr.
-3. `-export`: When set to false hashr will save the results to disk bypassing the exporter. 
-4. `-exportPath`: If export is set to false, this is the folder where samples will be saved.
-5. `-reprocess`: Allows to reprocess a given source (in case it e.g. errored out) based on the sha256 value stored in the jobs table. 
+1. `-cacheDir`: Location of local cache used for deduplication, it's advised to change that from `/tmp` to e.g. home directory of the user that will be running hashr.
+1. `-export`: When set to false hashr will save the results to disk bypassing the exporter. 
+1. `-exportPath`: If export is set to false, this is the folder where samples will be saved.
+1. `-reprocess`: Allows to reprocess a given source (in case it e.g. errored out) based on the sha256 value stored in the jobs table. 
 
 
 This is not an officially supported Google product.
