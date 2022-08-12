@@ -113,6 +113,9 @@ func (s *testSource) Local() bool {
 func (s *testSource) LocalPath() string {
 	return s.localPath
 }
+func (s *testSource) Description() string {
+	return ""
+}
 
 type testProcessor struct {
 }
@@ -124,7 +127,7 @@ func (p *testProcessor) ImageExport(sourcePath string) (string, error) {
 type testExporter struct {
 }
 
-func (e *testExporter) Export(ctx context.Context, repoName, repoPath, sourceID, sourceHash, sourcePath string, samples []common.Sample) error {
+func (e *testExporter) Export(ctx context.Context, repoName, repoPath, sourceID, sourceHash, sourcePath, sourceDescription string, samples []common.Sample) error {
 	return nil
 }
 
@@ -132,7 +135,7 @@ func (e *testExporter) Name() string {
 	return "testExporter"
 }
 
-// TestRun requires Spanner emulator to be running: https://cloud.google.com/spanner/docs/emulator. 
+// TestRun requires Spanner emulator to be running: https://cloud.google.com/spanner/docs/emulator.
 func TestRun(t *testing.T) {
 	for _, tc := range []struct {
 		export                bool

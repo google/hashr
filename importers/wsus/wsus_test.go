@@ -234,6 +234,7 @@ func TestDiscoverRepo(t *testing.T) {
 	repo := &Repo{}
 
 	storageHTTPClient, storageHTTPTransport := mockHTTPClientAndTransport()
+	storageHTTPTransport.add(404, "", nil)
 	storageHTTPTransport.add(200, gcsListResponse, nil)
 
 	var err error
@@ -428,7 +429,7 @@ func TestPreprocess(t *testing.T) {
 			},
 			testdataPath: "testdata/1F35F72D34C16FF7D7270D60472D8AD9FF9D7EFF.cab",
 			wantExtraction: extraction{
-				update: "1F35F72D34C16FF7D7270D60472D8AD9FF9D7EFF-kb3033889.cab",
+				update: "1F35F72D34C16FF7D7270D60472D8AD9FF9D7EFF",
 				files: map[string]string{
 					"0":                  "e6ad1dc75c73060262d5e22bdfd898ee6fadb6dca6aa184857cdebf25ce68199",
 					"1":                  "54e807fda795fb7a68780da63164d4e9257345fdb293b18a26f77039b8d17b9c",

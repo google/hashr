@@ -40,14 +40,14 @@ const (
 )
 
 // Preprocess extracts the contents of Windows ISO file.
-func (i *wimImage) Preprocess() (string, error) {
+func (w *wimImage) Preprocess() (string, error) {
 	var err error
-	i.localPath, err = common.CopyToLocal(i.remotePath, i.id)
+	w.localPath, err = common.CopyToLocal(w.remotePath, w.id)
 	if err != nil {
-		return "", fmt.Errorf("error while copying %s to %s: %v", i.remotePath, i.localPath, err)
+		return "", fmt.Errorf("error while copying %s to %s: %v", w.remotePath, w.localPath, err)
 	}
 
-	baseDir, _ := filepath.Split(i.localPath)
+	baseDir, _ := filepath.Split(w.localPath)
 
 	extractionDir := filepath.Join(baseDir, "extracted")
 
@@ -56,7 +56,7 @@ func (i *wimImage) Preprocess() (string, error) {
 		return "", fmt.Errorf("could not create mount directory: %v", err)
 	}
 
-	_, err = shellCommand("sudo", "mount", i.localPath, mountDir)
+	_, err = shellCommand("sudo", "mount", w.localPath, mountDir)
 	if err != nil {
 		return "", fmt.Errorf("error while executing mount cmd: %v", err)
 	}
@@ -74,8 +74,8 @@ func (i *wimImage) Preprocess() (string, error) {
 	}
 
 	for _, image := range reader.Image {
-		if image.Name == i.imageName {
-			glog.Infof("Extracting files from %s located in %s to %s", image.Name, i.localPath, extractionDir)
+		if image.Name == w.imageName {
+			glog.Infof("Extracting files from %s located in %s to %s", image.Name, w.localPath, extractionDir)
 			err := extractWimImage(image, extractionDir)
 			if err != nil {
 				return "", fmt.Errorf("error while extracting wim image %s: %v", image.Name, err)
@@ -171,33 +171,38 @@ func shellCommand(binary string, args ...string) (string, error) {
 }
 
 // ID returns non-unique Windows ISO file ID.
-func (i *wimImage) ID() string {
-	return i.id
+func (w *wimImage) ID() string {
+	return w.id
 }
 
 // RepoName returns repository name.
-func (i *wimImage) RepoName() string {
+func (w *wimImage) RepoName() string {
 	return RepoName
 }
 
 // RepoPath returns repository path.
-func (i *wimImage) RepoPath() string {
-	return i.repoPath
+func (w *wimImage) RepoPath() string {
+	return w.repoPath
 }
 
 // LocalPath returns local path to a Windows ISO file.
-func (i *wimImage) LocalPath() string {
-	return i.localPath
+func (w *wimImage) LocalPath() string {
+	return w.localPath
 }
 
 // RemotePath returns remote path to a Windows ISO file.
-func (i *wimImage) RemotePath() string {
-	return i.remotePath
+func (w *wimImage) RemotePath() string {
+	return w.remotePath
 }
 
-// QuickSHA256Hash calculates sha256 hash of a Windows Update file metadata.
-func (i *wimImage) QuickSHA256Hash() (string, error) {
-	return i.quickHash, nil
+// QuickSHA256Hash calculates sha256 hash of a Windows ISO file.
+func (w *wimImage) QuickSHA256Hash() (string, error) {
+	return w.quickHash, nil
+}
+
+// Description provides additional description for a Windows ISO file.
+func (w *wimImage) Description() string {
+	return ""
 }
 
 // NewRepo returns new instance of a Windows ISO repository.
