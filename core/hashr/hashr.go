@@ -53,7 +53,7 @@ type Source interface {
 	// already processed.Given the fact that some repositories will hold a lot of data, the intent
 	// here is to use the least resource demanding method to return a source digest.
 	QuickSHA256Hash() (string, error)
-	// Description provides additional description for the source
+	// Description provides additional description of the source.
 	Description() string
 }
 
