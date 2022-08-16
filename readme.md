@@ -317,6 +317,36 @@ This importer utilizes 7z to recursively extract contents of Windows Update pack
 1. Configure it with WSUS role, select Windows Update packages that you'd like to process
 1. Configure WSUS to automatically approve and download updates to local storage 
 1. Set up a Windows task to automatically sync content of the local storage to the GCS bucket: `gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/` (remember to adjust the paths)
+1. If you'd like to have the filename of the update package (which usually contains KB number) as the ID (by default it's sha1, that's how MS stores WSUS updates) and its description this is something that can be dumped from the internal WID WSUS database. You can use the following Power Shell script and run it as a task: 
+
+```
+#SQL Query
+$delimiter = ";"
+$SqlQuery = 'select DISTINCT CONVERT([varchar](512), tbfile.FileDigest, 2) as sha1, tbfile.[FileName], vu.[KnowledgebaseArticle], vu.[DefaultTitle]  from [SUSDB].[dbo].[tbFile] tbfile 
+  left join [SUSDB].[dbo].[tbFileForRevision] ffrev
+  on tbfile.FileDigest = ffrev.FileDigest
+  left join [SUSDB].[dbo].[tbRevision] rev
+  on ffrev.RevisionID = rev.RevisionID
+  left join [SUSDB].[dbo].[tbUpdate] u
+  on rev.LocalUpdateID = u.LocalUpdateID
+  left join [SUSDB].[PUBLIC_VIEWS].[vUpdate] vu
+  on u.UpdateID = vu.UpdateId'  
+$SqlConnection = New-Object System.Data.SqlClient.SqlConnection  
+$SqlConnection.ConnectionString = 'server=\\.\pipe\MICROSOFT##WID\tsql\query;database=SUSDB;trusted_connection=true;'
+$SqlCmd = New-Object System.Data.SqlClient.SqlCommand  
+$SqlCmd.CommandText = $SqlQuery  
+$SqlCmd.Connection = $SqlConnection  
+$SqlAdapter = New-Object System.Data.SqlClient.SqlDataAdapter  
+$SqlAdapter.SelectCommand = $SqlCmd   
+#Creating Dataset  
+$DataSet = New-Object System.Data.DataSet  
+$SqlAdapter.Fill($DataSet)  
+$DataSet.Tables[0] | export-csv -Delimiter $delimiter -Path "D:\WSUS\WsusContent\export.csv" -NoTypeInformation 
+
+gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/
+```
+
+This will dump the relevant information from WSUS DB, store it in the `export.csv` file and sync the contents of the WSUS folder with GCS bucket. WSUS importer will check if `export.csv` file is present in the root of the WSUS repo, if so it will use it. 
 
 ### Setting up Postgres exporter 
 

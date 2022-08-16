@@ -40,7 +40,7 @@ type updateFormat int
 const (
 	// RepoName contains the repository name.
 	RepoName              = "wsus"
-	path7z                = "/opt/homebrew/bin/7z" // "/usr/bin/7z"
+	path7z                = "/usr/bin/7z"
 	exe      updateFormat = iota
 	cabArchive
 )
@@ -240,7 +240,6 @@ func recursiveExtract(files []string) error {
 
 // This is mainly to enable testing.
 var execute = func(name string, args ...string) *exec.Cmd {
-	glog.Infof("name: %v, args: %v", name, args)
 	return exec.Command(name, args...)
 }
 
@@ -333,6 +332,9 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 			if val, exists := updates[sha1]; exists && val.filename != "" {
 				id = val.filename
 				updateTitle = val.defaultTitle
+				if val.kbArticle != "" {
+					updateTitle = fmt.Sprintf("KB%s %s", val.kbArticle, updateTitle)
+				}
 			} else {
 				id = sha1
 			}
