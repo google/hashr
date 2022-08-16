@@ -19,10 +19,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/xml"
+	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,22 +58,23 @@ type update struct {
 	localPath       string
 	tempDir         string
 	format          updateFormat
+	updateTitle     string
 }
 
 // Preprocess extracts the contents of Windows Update file.
-func (i *update) Preprocess() (string, error) {
-	if err := i.download(); err != nil {
+func (u *update) Preprocess() (string, error) {
+	if err := u.download(); err != nil {
 		return "", err
 	}
 
-	extractionDir := filepath.Join(i.tempDir, "extracted")
+	extractionDir := filepath.Join(u.tempDir, "extracted")
 	if err := os.Mkdir(extractionDir, 0755); err != nil {
 		return "", fmt.Errorf("could not create target %s directory: %v", extractionDir, err)
 	}
 
-	switch i.format {
+	switch u.format {
 	case cabArchive, exe:
-		if err := i.recursiveExtract(extractionDir); err != nil {
+		if err := u.recursiveExtract(extractionDir); err != nil {
 			return "", err
 		}
 	}
@@ -82,87 +83,82 @@ func (i *update) Preprocess() (string, error) {
 }
 
 // ID returns non-unique Windows Update ID.
-func (i *update) ID() string {
-	return i.id
+func (u *update) ID() string {
+	return u.id
 }
 
 // RepoName returns repository name.
-func (i *update) RepoName() string {
+func (u *update) RepoName() string {
 	return RepoName
 }
 
 // RepoPath returns repository path.
-func (i *update) RepoPath() string {
+func (u *update) RepoPath() string {
 	return fmt.Sprintf("gs://%s/", gcsBucket)
 }
 
 // LocalPath returns local path to a Windows Update file.
-func (i *update) LocalPath() string {
-	return i.localPath
+func (u *update) LocalPath() string {
+	return u.localPath
 }
 
 // RemotePath returns remote path to a Windows Update file stored in the GCS bucket.
-func (i *update) RemotePath() string {
-	return fmt.Sprintf("gs://%s/%s", gcsBucket, i.remotePath)
+func (u *update) RemotePath() string {
+	return fmt.Sprintf("gs://%s/%s", gcsBucket, u.remotePath)
+}
+
+// Description provides additional description for a Windows Update file.
+func (u *update) Description() string {
+	return u.updateTitle
 }
 
 // QuickSHA256Hash calculates sha256 hash of a Windows Update file metadata.
-func (i *update) QuickSHA256Hash() (string, error) {
-	if i.quickSha256hash != "" {
-		return i.quickSha256hash, nil
+func (u *update) QuickSHA256Hash() (string, error) {
+	if u.quickSha256hash != "" {
+		return u.quickSha256hash, nil
 	}
 
-	i.quickSha256hash = fmt.Sprintf("%x", sha256.Sum256([]byte(i.id+i.md5hash)))
+	u.quickSha256hash = fmt.Sprintf("%x", sha256.Sum256([]byte(u.id+u.md5hash)))
 
-	return i.quickSha256hash, nil
+	return u.quickSha256hash, nil
 }
 
-func (i *update) download() error {
-	_, file := filepath.Split(i.remotePath)
+func (u *update) download() error {
+	_, file := filepath.Split(u.remotePath)
 
-	resp, err := storageClient.Objects.Get(gcsBucket, i.remotePath).Download()
+	resp, err := storageClient.Objects.Get(gcsBucket, u.remotePath).Download()
 	if err != nil {
 		glog.Exit(err)
 		return err
 	}
 	defer resp.Body.Close()
 
-	i.tempDir, err = common.LocalTempDir(i.ID())
+	u.tempDir, err = common.LocalTempDir(u.ID())
 	if err != nil {
 		glog.Exit(err)
 		return err
 	}
 
-	i.localPath = filepath.Join(i.tempDir, file)
-	out, err := os.Create(i.localPath)
+	u.localPath = filepath.Join(u.tempDir, file)
+	out, err := os.Create(u.localPath)
 	if err != nil {
 		glog.Exit(err)
-		return fmt.Errorf("error while creating %s: %v", i.localPath, err)
+		return fmt.Errorf("error while creating %s: %v", u.localPath, err)
 	}
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return fmt.Errorf("error while writing to %s: %v", i.localPath, err)
+		return fmt.Errorf("error while writing to %s: %v", u.localPath, err)
 	}
 
-	glog.Infof("Update %s successfully written to %s", i.remotePath, i.localPath)
+	glog.Infof("Update %s successfully written to %s", u.remotePath, u.localPath)
 
 	return nil
 }
 
-func (i *update) recursiveExtract(extractionDir string) error {
-	if err := extract7z(i.localPath, extractionDir); err != nil {
+func (u *update) recursiveExtract(extractionDir string) error {
+	if err := extract7z(u.localPath, extractionDir); err != nil {
 		return err
-	}
-
-	// If the manifest file exists, try to extract KB ID.
-	manifestPath := filepath.Join(extractionDir, "_manifest_.cix.xml")
-	if _, err := os.Stat(manifestPath); err == nil {
-		kbID, err := extractKB(manifestPath)
-		if err != nil {
-			glog.Errorf("could not extract KB ID: %v", err)
-		}
-		i.id = fmt.Sprintf("%s-%s", i.id, kbID)
 	}
 
 	var files []string
@@ -244,7 +240,6 @@ func recursiveExtract(files []string) error {
 
 // This is mainly to enable testing.
 var execute = func(name string, args ...string) *exec.Cmd {
-	glog.Infof("name: %v, args: %v", name, args)
 	return exec.Command(name, args...)
 }
 
@@ -286,33 +281,6 @@ func walk(files *[]string) filepath.WalkFunc {
 	}
 }
 
-func extractKB(manifestPath string) (string, error) {
-	xmlFile, err := os.Open(manifestPath)
-	if err != nil {
-		return "", fmt.Errorf("error while opening XML manifest file: %v", err)
-	}
-
-	defer xmlFile.Close()
-
-	type Update struct {
-		XMLName xml.Name `xml:"Container"`
-		Name    string   `xml:"name,attr"`
-	}
-
-	byteValue, err := ioutil.ReadAll(xmlFile)
-	if err != nil {
-		return "", fmt.Errorf("error while reading XML manifest file: %v", err)
-	}
-
-	var update Update
-	err = xml.Unmarshal(byteValue, &update)
-	if err != nil {
-		return "", fmt.Errorf("error while unmarshalling XML manifest file: %v", err)
-	}
-
-	return update.Name, nil
-}
-
 // NewRepo returns new instance of a WSUS repository.
 func NewRepo(ctx context.Context, storageService *storage.Service, gcsWSUSBucket string) (*Repo, error) {
 	storageClient = storageService
@@ -322,9 +290,7 @@ func NewRepo(ctx context.Context, storageService *storage.Service, gcsWSUSBucket
 
 // Repo holds data related to a Windows WSUS repository.
 type Repo struct {
-	name   string
-	files  []string
-	images []*update
+	updates []*update
 }
 
 // RepoName returns repository name.
@@ -337,10 +303,20 @@ func (r *Repo) RepoPath() string {
 	return fmt.Sprintf("gs://%s/", gcsBucket)
 }
 
+type wsusUpdate struct {
+	filename     string
+	kbArticle    string
+	defaultTitle string
+}
+
 // DiscoverRepo traverses the repository and looks for files that are related to WSUS packages.
 func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
-	var token string
+	updates, err := csvMapping()
+	if err != nil {
+		glog.Warningf("Could not get CSV mapping file: %v", err)
+	}
 
+	var token string
 	for {
 		resp, err := storageClient.Objects.List(gcsBucket).PageToken(token).Do()
 		if err != nil {
@@ -349,11 +325,24 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 		for _, obj := range resp.Items {
 			_, filename := filepath.Split(obj.Name)
 			ext := filepath.Ext(filename)
-			name := filename[0 : len(filename)-len(ext)]
+			sha1 := filename[0 : len(filename)-len(ext)]
+
+			var id string
+			var updateTitle string
+			if val, exists := updates[sha1]; exists && val.filename != "" {
+				id = val.filename
+				updateTitle = val.defaultTitle
+				if val.kbArticle != "" {
+					updateTitle = fmt.Sprintf("KB%s %s", val.kbArticle, updateTitle)
+				}
+			} else {
+				id = sha1
+			}
+
 			if strings.EqualFold(ext, ".cab") {
-				r.images = append(r.images, &update{id: name, remotePath: obj.Name, md5hash: obj.Md5Hash, format: cabArchive})
+				r.updates = append(r.updates, &update{id: id, remotePath: obj.Name, md5hash: obj.Md5Hash, format: cabArchive, updateTitle: updateTitle})
 			} else if strings.EqualFold(ext, ".exe") {
-				r.images = append(r.images, &update{id: name, remotePath: obj.Name, md5hash: obj.Md5Hash, format: exe})
+				r.updates = append(r.updates, &update{id: id, remotePath: obj.Name, md5hash: obj.Md5Hash, format: exe, updateTitle: updateTitle})
 			}
 		}
 		token = resp.NextPageToken
@@ -363,9 +352,44 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 	}
 
 	var sources []hashr.Source
-	for _, image := range r.images {
-		sources = append(sources, image)
+	for _, update := range r.updates {
+		sources = append(sources, update)
 	}
 
 	return sources, nil
+}
+
+func csvMapping() (map[string]*wsusUpdate, error) {
+	resp, err := storageClient.Objects.Get(gcsBucket, "export.csv").Download()
+	if err != nil {
+		return nil, fmt.Errorf("mapping file (%s) is not present", filepath.Join(gcsBucket, "export.csv"))
+	}
+	defer resp.Body.Close()
+
+	var bodyBytes []byte
+	if resp.StatusCode == http.StatusOK {
+		bodyBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	csvReader := csv.NewReader(bytes.NewReader(bodyBytes))
+	csvReader.Comma = ';'
+	rows, err := csvReader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse CSV mapping file: %v", err)
+	}
+
+	updates := make(map[string]*wsusUpdate)
+
+	for _, row := range rows[1:] {
+		if val, exists := updates[row[0]]; exists {
+			val.defaultTitle = fmt.Sprintf("%s, %s", val.defaultTitle, row[3])
+		} else {
+			updates[row[0]] = &wsusUpdate{filename: row[1], kbArticle: row[2], defaultTitle: row[3]}
+		}
+	}
+
+	return updates, nil
 }

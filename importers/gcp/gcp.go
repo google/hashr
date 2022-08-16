@@ -58,6 +58,7 @@ type Image struct {
 	localTarGzPath  string
 	remoteTarGzPath string
 	quickSha256hash string
+	description     string
 }
 
 // Preprocess creates tar.gz file from an image, copies to local storage and extracts it.
@@ -113,6 +114,11 @@ func (i *Image) RemotePath() string {
 	return fmt.Sprintf("gs://%s/%s-%s.tar.gz", gcsBucket, i.project, i.name)
 }
 
+// Description provides additional description for GCP image.
+func (i *Image) Description() string {
+	return i.description
+}
+
 // QuickSHA256Hash returns sha256 of custom properties of a GCP image.
 func (i *Image) QuickSHA256Hash() (string, error) {
 	// Check if the quick hash was already calculated.
@@ -147,7 +153,6 @@ func (i *Image) QuickSHA256Hash() (string, error) {
 // Repo holds data related to a GCP repository.
 type Repo struct {
 	projectName string
-	files       []string
 	images      []*Image
 }
 
@@ -187,7 +192,7 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 			continue
 		}
 
-		r.images = append(r.images, &Image{id: fmt.Sprintf("%s-%s", r.projectName, image.Name), name: image.Name, project: r.projectName})
+		r.images = append(r.images, &Image{id: fmt.Sprintf("%s-%s", r.projectName, image.Name), name: image.Name, project: r.projectName, description: image.Description})
 	}
 
 	var sources []hashr.Source
@@ -316,6 +321,7 @@ func RunImageExportBuild(cloudBuildClient *cloudbuild.Service, sourceProjectName
 
 func (i *Image) download() error {
 	imageFile := fmt.Sprintf("%s-%s.tar.gz", i.project, i.name)
+	i.remoteTarGzPath = filepath.Join()
 
 	resp, err := storageClient.Objects.Get(gcsBucket, imageFile).Download()
 	if err != nil {

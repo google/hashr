@@ -49,8 +49,8 @@ func NewExporter(sqlDB *sql.DB, uploadPayloads bool) (*Exporter, error) {
 }
 
 // Export exports extracted data to PostgreSQL instance.
-func (e *Exporter) Export(ctx context.Context, sourceRepoName, sourceRepoPath, sourceID, sourceHash, sourcePath string, samples []common.Sample) error {
-	if err := e.insertSource(sourceHash, sourceID, sourcePath, sourceRepoName, sourceRepoPath); err != nil {
+func (e *Exporter) Export(ctx context.Context, sourceRepoName, sourceRepoPath, sourceID, sourceHash, sourcePath, sourceDescription string, samples []common.Sample) error {
+	if err := e.insertSource(sourceHash, sourceID, sourcePath, sourceRepoName, sourceRepoPath, sourceDescription); err != nil {
 		return fmt.Errorf("could not upload source data: %v", err)
 	}
 
@@ -182,7 +182,7 @@ func (e *Exporter) insertSample(sample common.Sample, uploadPayload bool) error 
 	return nil
 }
 
-func (e *Exporter) insertSource(sourceHash, sourceID, sourcePath, sourceRepoName, sourceRepoPath string) error {
+func (e *Exporter) insertSource(sourceHash, sourceID, sourcePath, sourceRepoName, sourceRepoPath, sourceDescription string) error {
 	exists, err := e.sourceExists(sourceHash)
 	if err != nil {
 		return err
@@ -191,10 +191,10 @@ func (e *Exporter) insertSource(sourceHash, sourceID, sourcePath, sourceRepoName
 	var sql string
 	if !exists {
 		sql = `
-		INSERT INTO sources (sha256, sourceID, sourcePath, repoName, repoPath)
-		VALUES ($1, $2, $3, $4, $5)`
+		INSERT INTO sources (sha256, sourceID, sourcePath, repoName, repoPath, sourceDescription)
+		VALUES ($1, $2, $3, $4, $5, $6)`
 
-		_, err = e.sqlDB.Exec(sql, sourceHash, pq.Array([]string{sourceID}), sourcePath, sourceRepoName, sourceRepoPath)
+		_, err = e.sqlDB.Exec(sql, sourceHash, pq.Array([]string{sourceID}), sourcePath, sourceRepoName, sourceRepoPath, sourceDescription)
 		if err != nil {
 			return err
 		}

@@ -39,7 +39,7 @@ func TestExport(t *testing.T) {
 	}
 
 	mock.ExpectQuery(`SELECT sha256 FROM sources WHERE sha256=$1;`).WithArgs("07123e1f482356c415f684407a3b8723e10b2cbbc0b8fcd6282c49d37c9c1abc").WillReturnRows(mock.NewRows([]string{"sha256"}))
-	mock.ExpectExec(`INSERT INTO sources (sha256, sourceID, sourcePath, repoName, repoPath) VALUES ($1, $2, $3, $4, $5)`).WithArgs("07123e1f482356c415f684407a3b8723e10b2cbbc0b8fcd6282c49d37c9c1abc", `{"ubuntu-1604-lts"}`, "", "GCP", "ubuntu").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`INSERT INTO sources (sha256, sourceID, sourcePath, repoName, repoPath, sourceDescription) VALUES ($1, $2, $3, $4, $5, $6)`).WithArgs("07123e1f482356c415f684407a3b8723e10b2cbbc0b8fcd6282c49d37c9c1abc", `{"ubuntu-1604-lts"}`, "", "GCP", "ubuntu", "Official Ubuntu GCP image.").WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectQuery(`SELECT sha256 FROM samples WHERE sha256=$1;`).WithArgs("a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3").WillReturnRows(mock.NewRows([]string{"sha256"}))
 	mock.ExpectExec(`INSERT INTO samples (sha256, size, mimetype, file_output) VALUES ($1, $2, $3, $4)`).WithArgs("a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3", 8192, "application/octet-stream", " data").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -96,7 +96,7 @@ func TestExport(t *testing.T) {
 		},
 	}
 
-	if err := postgresExporter.Export(context.Background(), "GCP", "ubuntu", "ubuntu-1604-lts", "07123e1f482356c415f684407a3b8723e10b2cbbc0b8fcd6282c49d37c9c1abc", "", samples); err != nil {
+	if err := postgresExporter.Export(context.Background(), "GCP", "ubuntu", "ubuntu-1604-lts", "07123e1f482356c415f684407a3b8723e10b2cbbc0b8fcd6282c49d37c9c1abc", "", "Official Ubuntu GCP image.", samples); err != nil {
 		t.Fatalf("unexpected error while running Export() = %v", err)
 	}
 }

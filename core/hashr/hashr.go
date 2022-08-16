@@ -53,6 +53,8 @@ type Source interface {
 	// already processed.Given the fact that some repositories will hold a lot of data, the intent
 	// here is to use the least resource demanding method to return a source digest.
 	QuickSHA256Hash() (string, error)
+	// Description provides additional description of the source.
+	Description() string
 }
 
 // Importer represents importer instance that will be used to import data for processing.
@@ -81,7 +83,7 @@ type Storage interface {
 // Exporter represents exporter instance that will be used to export extracted data.
 type Exporter interface {
 	// Export exports samples to a given data sink.
-	Export(ctx context.Context, repoName, repoPath, sourceID, sourceHash, sourcePath string, samples []common.Sample) error
+	Export(ctx context.Context, repoName, repoPath, sourceID, sourceHash, sourcePath, sourceDescription string, samples []common.Sample) error
 	// Name returns exporter name.
 	Name() string
 }
@@ -367,7 +369,7 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 		if h.Export {
 			start := time.Now()
 			glog.Infof("Exporting samples from %s with %s hash", source.ID(), extraction.SourceSHA256)
-			err = h.Exporter.Export(ctx, source.RepoName(), source.RepoPath(), extraction.SourceID, extraction.SourceSHA256, source.RemotePath(), samples)
+			err = h.Exporter.Export(ctx, source.RepoName(), source.RepoPath(), extraction.SourceID, extraction.SourceSHA256, source.RemotePath(), source.Description(), samples)
 			if err != nil {
 				h.handleError(ctx, qHash, extraction.BaseDir, h.processingSources[qHash], err)
 				h.mu.Unlock()

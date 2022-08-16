@@ -28,6 +28,7 @@ CREATE TABLE sources (
         sha256 VARCHAR(100)  PRIMARY KEY,
         sourceID  text[],
         sourcePath  text,
+        sourceDescription text,
         repoName text,
         repoPath text
 );
