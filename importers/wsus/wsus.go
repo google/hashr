@@ -32,7 +32,7 @@ import (
 	"github.com/google/hashr/core/hashr"
 	"github.com/google/hashr/importers/common"
 
-	storage "google.golang.org/api/storage/v1"
+	"google.golang.org/api/storage/v1"
 )
 
 type updateFormat int
