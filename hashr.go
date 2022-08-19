@@ -24,6 +24,7 @@ import (
 	"cloud.google.com/go/spanner"
 	"github.com/golang/glog"
 	"github.com/google/hashr/core/hashr"
+	exporter "github.com/google/hashr/exporters/postgres"
 	"github.com/google/hashr/importers/gcp"
 	"github.com/google/hashr/importers/targz"
 	"github.com/google/hashr/importers/windows"
@@ -32,10 +33,9 @@ import (
 	"github.com/google/hashr/storage/cloudspanner"
 	"github.com/google/hashr/storage/postgres"
 
-	exporter "github.com/google/hashr/exporters/postgres"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
-	compute "google.golang.org/api/compute/v1"
-	GCPStorage "google.golang.org/api/storage/v1"
+	"google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/storage/v1"
 )
 
 var (
@@ -86,7 +86,7 @@ func main() {
 			}
 			importers = append(importers, r)
 		case wsus.RepoName:
-			s, err := GCPStorage.NewService(ctx)
+			s, err := storage.NewService(ctx)
 			if err != nil {
 				glog.Exitf("Could not initialize GCP Storage client: %v", err)
 			}
@@ -101,7 +101,7 @@ func main() {
 				glog.Exitf("Could not initialize GCP Compute client: %v", err)
 			}
 
-			storageClient, err := GCPStorage.NewService(ctx)
+			storageClient, err := storage.NewService(ctx)
 			if err != nil {
 				glog.Exitf("Could not initialize GCP Storage client: %v", err)
 			}
