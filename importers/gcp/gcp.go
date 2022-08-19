@@ -31,9 +31,9 @@ import (
 	"github.com/google/hashr/core/hashr"
 	"github.com/google/hashr/importers/common"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
-	compute "google.golang.org/api/compute/v1"
-	storage "google.golang.org/api/storage/v1"
+	"google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/storage/v1"
 )
 
 const (

@@ -25,10 +25,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
-	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
-	storage "google.golang.org/api/storage/v1"
+	"google.golang.org/api/storage/v1"
 )
 
 type mockTransport struct {

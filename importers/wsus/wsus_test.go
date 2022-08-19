@@ -27,7 +27,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
-	storage "google.golang.org/api/storage/v1"
+	"google.golang.org/api/storage/v1"
 )
 
 var gcsListResponse = `{
