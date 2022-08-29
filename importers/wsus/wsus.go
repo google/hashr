@@ -118,7 +118,7 @@ func (u *update) QuickSHA256Hash() (string, error) {
 		return u.quickSha256hash, nil
 	}
 
-	u.quickSha256hash = fmt.Sprintf("%x", sha256.Sum256([]byte(u.id+u.md5hash)))
+	u.quickSha256hash = fmt.Sprintf("%x", sha256.Sum256([]byte(u.md5hash)))
 
 	return u.quickSha256hash, nil
 }
