@@ -336,6 +336,7 @@ $SqlConnection.ConnectionString = 'server=\\.\pipe\MICROSOFT##WID\tsql\query;dat
 $SqlCmd = New-Object System.Data.SqlClient.SqlCommand  
 $SqlCmd.CommandText = $SqlQuery  
 $SqlCmd.Connection = $SqlConnection  
+$SqlCmd.CommandTimeout = 0
 $SqlAdapter = New-Object System.Data.SqlClient.SqlDataAdapter  
 $SqlAdapter.SelectCommand = $SqlCmd   
 #Creating Dataset  
