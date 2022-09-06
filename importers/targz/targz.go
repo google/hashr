@@ -35,8 +35,8 @@ const (
 	chunkSize = 1024 * 1024 * 10 // 10MB
 )
 
-// TarGzFile holds data related to targz archive.
-type TarGzFile struct {
+// Archive holds data related to targz archive.
+type Archive struct {
 	filename        string
 	remotePath      string
 	localPath       string
@@ -45,61 +45,61 @@ type TarGzFile struct {
 }
 
 // Preprocess extracts the contents of a .tar.gz file.
-func (t *TarGzFile) Preprocess() (string, error) {
+func (a *Archive) Preprocess() (string, error) {
 	var err error
-	t.localPath, err = common.CopyToLocal(t.remotePath, t.ID())
+	a.localPath, err = common.CopyToLocal(a.remotePath, a.ID())
 	if err != nil {
-		return "", fmt.Errorf("error while copying %s to local file system: %v", t.remotePath, err)
+		return "", fmt.Errorf("error while copying %s to local file system: %v", a.remotePath, err)
 	}
 
-	baseDir, _ := filepath.Split(t.localPath)
+	baseDir, _ := filepath.Split(a.localPath)
 	extractionDir := filepath.Join(baseDir, "extracted")
 
-	if err := common.ExtractTarGz(t.localPath, extractionDir); err != nil {
+	if err := common.ExtractTarGz(a.localPath, extractionDir); err != nil {
 		return "", err
 	}
 
 	return extractionDir, nil
 }
 
-// ID returns non-unique targz TarGzFile ID.
-func (t *TarGzFile) ID() string {
-	return t.filename
+// ID returns non-unique targz Archive ID.
+func (a *Archive) ID() string {
+	return a.filename
 }
 
 // RepoName returns repository name.
-func (t *TarGzFile) RepoName() string {
+func (a *Archive) RepoName() string {
 	return RepoName
 }
 
 // RepoPath returns repository path.
-func (t *TarGzFile) RepoPath() string {
-	return t.repoPath
+func (a *Archive) RepoPath() string {
+	return a.repoPath
 }
 
-// LocalPath returns local path to a targz TarGzFile .tar.gz file.
-func (t *TarGzFile) LocalPath() string {
-	return t.localPath
+// LocalPath returns local path to a targz Archive .tar.gz file.
+func (a *Archive) LocalPath() string {
+	return a.localPath
 }
 
-// RemotePath returns non-local path to a targz TarGzFile .tar.gz file.
-func (t *TarGzFile) RemotePath() string {
-	return t.remotePath
+// RemotePath returns non-local path to a targz Archive .tar.gz file.
+func (a *Archive) RemotePath() string {
+	return a.remotePath
 }
 
 // Description provides additional description for a .tar.gz file.
-func (t *TarGzFile) Description() string {
+func (a *Archive) Description() string {
 	return ""
 }
 
 // QuickSHA256Hash calculates sha256 hash of .tar.gz file.
-func (t *TarGzFile) QuickSHA256Hash() (string, error) {
+func (a *Archive) QuickSHA256Hash() (string, error) {
 	// Check if the quick hash was already calculated.
-	if t.quickSha256hash != "" {
-		return t.quickSha256hash, nil
+	if a.quickSha256hash != "" {
+		return a.quickSha256hash, nil
 	}
 
-	f, err := os.Open(t.remotePath)
+	f, err := os.Open(a.remotePath)
 	if err != nil {
 		return "", err
 	}
@@ -116,8 +116,8 @@ func (t *TarGzFile) QuickSHA256Hash() (string, error) {
 		if _, err := io.Copy(h, f); err != nil {
 			return "", err
 		}
-		t.quickSha256hash = fmt.Sprintf("%x", h.Sum(nil))
-		return t.quickSha256hash, nil
+		a.quickSha256hash = fmt.Sprintf("%x", h.Sum(nil))
+		return a.quickSha256hash, nil
 	}
 
 	header := make([]byte, chunkSize)
@@ -132,8 +132,8 @@ func (t *TarGzFile) QuickSHA256Hash() (string, error) {
 		return "", err
 	}
 
-	t.quickSha256hash = fmt.Sprintf("%x", sha256.Sum256(append(header, footer...)))
-	return t.quickSha256hash, nil
+	a.quickSha256hash = fmt.Sprintf("%x", sha256.Sum256(append(header, footer...)))
+	return a.quickSha256hash, nil
 }
 
 // NewRepo returns new instance of targz repository.
@@ -145,7 +145,7 @@ func NewRepo(path string) *Repo {
 type Repo struct {
 	location   string
 	files      []string
-	TarGzFiles []*TarGzFile
+	Archives []*Archive
 }
 
 // RepoName returns repository name.
@@ -158,7 +158,7 @@ func (r *Repo) RepoPath() string {
 	return r.location
 }
 
-// DiscoverRepo traverses the repository and looks for files that are related to targz base TarGzFiles.
+// DiscoverRepo traverses the repository and looks for files that are related to targz base Archives.
 func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 
 	if err := filepath.Walk(r.location, walk(&r.files)); err != nil {
@@ -169,13 +169,13 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 		_, filename := filepath.Split(file)
 
 		if strings.HasSuffix(filename, ".tar.gz") {
-			r.TarGzFiles = append(r.TarGzFiles, &TarGzFile{filename: filename, remotePath: file, repoPath: r.location})
+			r.Archives = append(r.Archives, &Archive{filename: filename, remotePath: file, repoPath: r.location})
 		}
 	}
 
 	var sources []hashr.Source
-	for _, TarGzFile := range r.TarGzFiles {
-		sources = append(sources, TarGzFile)
+	for _, Archive := range r.Archives {
+		sources = append(sources, Archive)
 	}
 
 	return sources, nil
