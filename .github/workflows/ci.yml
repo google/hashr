@@ -17,11 +17,8 @@ jobs:
       - name: Install golint
         run: go install golang.org/x/lint/golint@latest
 
-      - name: Install Spanner emulator
-        run: docker pull gcr.io/cloud-spanner-emulator/emulator
-
       - name: Run Spanner emulator
-        run: docker run -p 9010:9010 -p 9020:9020 gcr.io/cloud-spanner-emulator/emulator
+        run: docker run -d -p 9010:9010 -p 9020:9020 gcr.io/cloud-spanner-emulator/emulator
 
       - name: Run golint
         run: golint ./...
