@@ -35,16 +35,16 @@ func sha256sum(path string) ([32]byte, error) {
 	return sha256.Sum256(data), nil
 }
 
-func testImages() ([]*TarGzFile, error) {
+func testImages() ([]*Archive, error) {
 	gLinuxRepo := NewRepo("testdata")
 	gotSources, err := gLinuxRepo.DiscoverRepo()
 	if err != nil {
 		return nil, fmt.Errorf("unexpected error while discovering repo: %v", err)
 	}
 
-	images := []*TarGzFile{}
+	images := []*Archive{}
 	for _, source := range gotSources {
-		if image, ok := source.(*TarGzFile); ok {
+		if image, ok := source.(*Archive); ok {
 			images = append(images, image)
 		} else {
 			return nil, errors.New("error while casting Source interface to Image struct")
@@ -60,7 +60,7 @@ func TestDiscover(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantImages := []*TarGzFile{
+	wantImages := []*Archive{
 		{
 			filename:   "ubuntu-desktop.tar.gz",
 			remotePath: "testdata/20200106.00.00/ubuntu-desktop.tar.gz",
@@ -123,8 +123,8 @@ func TestDiscover(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(wantImages, gotImages, cmp.AllowUnexported(TarGzFile{})) {
-		t.Errorf("Discovery() unexpected diff (-want/+got):\n%s", cmp.Diff(wantImages, gotImages, cmp.AllowUnexported(TarGzFile{})))
+	if !cmp.Equal(wantImages, gotImages, cmp.AllowUnexported(Archive{})) {
+		t.Errorf("Discovery() unexpected diff (-want/+got):\n%s", cmp.Diff(wantImages, gotImages, cmp.AllowUnexported(Archive{})))
 	}
 }
 
@@ -397,7 +397,7 @@ func TestImageFunctions(t *testing.T) {
 	localTarGzPath := "/tmp/glinux-repo/20200108.00.00-ubuntu-desktop.tar.gz"
 	remotePath := "/x20/glinux-repo/20200108.00.00-ubuntu-desktop.tar.gz"
 
-	img := TarGzFile{filename: id, localPath: localTarGzPath, remotePath: remotePath, repoPath: repoPath}
+	img := Archive{filename: id, localPath: localTarGzPath, remotePath: remotePath, repoPath: repoPath}
 
 	if img.ID() != id {
 		t.Errorf("ID() = %s; want = %s", img.ID(), id)

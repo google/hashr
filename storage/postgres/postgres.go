@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/hashr/core/hashr"
 
+	// Blank import below is needed for the SQL driver.
 	_ "github.com/lib/pq"
 )
 
