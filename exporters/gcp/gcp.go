@@ -23,7 +23,7 @@ const (
 	Name = "gcp"
 )
 
-// Exporter is an instance of Cloud Spanner Exporter.
+// Exporter is an instance of GCP Exporter.
 type Exporter struct {
 	spannerClient  *spanner.Client
 	storageClient  *storage.Service
@@ -33,7 +33,7 @@ type Exporter struct {
 	wg             sync.WaitGroup
 }
 
-// NewStorage creates new Storage struct that allows to interact with cloud spanner.
+// NewExporter creates new GCP exporter.
 func NewExporter(spannerClient *spanner.Client, storageClient *storage.Service, GCSBucket string, uploadPayloads bool, workerCount int) (*Exporter, error) {
 	return &Exporter{spannerClient: spannerClient, storageClient: storageClient, GCSBucket: GCSBucket, uploadPayloads: uploadPayloads, workerCount: workerCount}, nil
 }
@@ -43,13 +43,11 @@ func (e *Exporter) Name() string {
 	return Name
 }
 
-// Export exports extracted data to Cloud Spanner instance.
+// Export exports extracted data to GCP (Spanner + GCS).
 func (e *Exporter) Export(ctx context.Context, sourceRepoName, sourceRepoPath, sourceID, sourceHash, sourcePath, sourceDescription string, samples []common.Sample) error {
 	if err := e.insertSource(ctx, sourceHash, sourceID, sourcePath, sourceRepoName, sourceRepoPath, sourceDescription); err != nil {
 		return fmt.Errorf("could not upload source data: %v", err)
 	}
-
-	fmt.Println(uploadPayloads)
 
 	jobs := make(chan common.Sample, len(samples))
 	for w := 1; w <= e.workerCount; w++ {
