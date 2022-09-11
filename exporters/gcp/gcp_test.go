@@ -1,4 +1,4 @@
-package cloudspanner
+package gcp
 
 import (
 	"context"
@@ -30,17 +30,17 @@ const (
 	payloadsTable = `
 	CREATE TABLE payloads (
 		sha256 STRING(100),
-		payload BYTES(MAX)
+		gcs_path STRING(200)
 	) PRIMARY KEY(sha256)`
 
 	sourcesTable = `
 	CREATE TABLE sources (
 		sha256 STRING(100),
-		sourceID  ARRAY<STRING(MAX)>,
-		sourcePath  STRING(MAX),
-		sourceDescription STRING(MAX),
-		repoName STRING(MAX),
-		repoPath STRING(MAX),
+        source_id  ARRAY<STRING(MAX)>,
+        source_path STRING(MAX),
+        source_description STRING(MAX),
+        repo_name STRING(MAX),
+        repo_path STRING(MAX),
 	) PRIMARY KEY(sha256)`
 
 	samplesSourcesTable = `CREATE TABLE samples_sources (
@@ -109,7 +109,7 @@ func TestExport(t *testing.T) {
 		glog.Fatalf("error creating Spanner client %v: %v", dbURI, err)
 	}
 
-	exporter, err := NewExporter(spannerClient, false, 10)
+	exporter, err := NewExporter(spannerClient, nil, "gcs-bucket", false, 10)
 	if err != nil {
 		glog.Fatalf("error creating Cloud Spanner exporter: %v", err)
 	}

@@ -32,6 +32,11 @@ import (
 	"github.com/lib/pq"
 )
 
+const (
+	// Name contains name of the exporter.
+	Name = "postgre"
+)
+
 // Exporter is an instance of Postgres Exporter.
 type Exporter struct {
 	sqlDB          *sql.DB
@@ -40,7 +45,7 @@ type Exporter struct {
 
 // Name returns exporter name.
 func (e *Exporter) Name() string {
-	return "postgre"
+	return Name
 }
 
 // NewExporter creates new Postregre exporter.

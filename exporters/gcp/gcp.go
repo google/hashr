@@ -1,4 +1,4 @@
-package cloudspanner
+package gcp
 
 import (
 	"bytes"
@@ -9,31 +9,38 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-	"time"
 
 	"cloud.google.com/go/spanner"
 	"github.com/golang/glog"
 	"github.com/google/hashr/common"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/storage/v1"
 	"google.golang.org/grpc/codes"
+)
+
+const (
+	// Name contains name of the exporter.
+	Name = "gcp"
 )
 
 // Exporter is an instance of Cloud Spanner Exporter.
 type Exporter struct {
 	spannerClient  *spanner.Client
+	storageClient  *storage.Service
+	GCSBucket      string
 	uploadPayloads bool
 	workerCount    int
 	wg             sync.WaitGroup
 }
 
 // NewStorage creates new Storage struct that allows to interact with cloud spanner.
-func NewExporter(spannerClient *spanner.Client, uploadPayloads bool, workerCount int) (*Exporter, error) {
-	return &Exporter{spannerClient: spannerClient, uploadPayloads: uploadPayloads, workerCount: workerCount}, nil
+func NewExporter(spannerClient *spanner.Client, storageClient *storage.Service, GCSBucket string, uploadPayloads bool, workerCount int) (*Exporter, error) {
+	return &Exporter{spannerClient: spannerClient, storageClient: storageClient, GCSBucket: GCSBucket, uploadPayloads: uploadPayloads, workerCount: workerCount}, nil
 }
 
 // Name returns exporter name.
 func (e *Exporter) Name() string {
-	return "cloudspanner"
+	return Name
 }
 
 // Export exports extracted data to Cloud Spanner instance.
@@ -41,6 +48,8 @@ func (e *Exporter) Export(ctx context.Context, sourceRepoName, sourceRepoPath, s
 	if err := e.insertSource(ctx, sourceHash, sourceID, sourcePath, sourceRepoName, sourceRepoPath, sourceDescription); err != nil {
 		return fmt.Errorf("could not upload source data: %v", err)
 	}
+
+	fmt.Println(uploadPayloads)
 
 	jobs := make(chan common.Sample, len(samples))
 	for w := 1; w <= e.workerCount; w++ {
@@ -170,19 +179,37 @@ func (e *Exporter) insertSample(ctx context.Context, sample common.Sample) error
 	}
 
 	if e.uploadPayloads && sample.Upload {
-		data, err := os.ReadFile(samplePath)
+		fmt.Println(samplePath)
+		file, err := os.Open(samplePath)
 		if err != nil {
 			return fmt.Errorf("error while opening file: %v", err)
+		}
+
+		fi, err := file.Stat()
+		if err != nil {
+			return fmt.Errorf("error while opening file: %v", err)
+		}
+
+		fmt.Println(fi.Size())
+
+		name := fmt.Sprintf("%s/%s", strings.ToUpper(sample.Sha256[0:2]), strings.ToUpper(sample.Sha256))
+		object := &storage.Object{
+			Name: name,
+		}
+
+		_, err = e.storageClient.Objects.Insert(e.GCSBucket, object).Media(file).Do()
+		if err != nil {
+			return fmt.Errorf("error uploading data to GCS: %v", err)
 		}
 
 		_, err = e.spannerClient.Apply(ctx, []*spanner.Mutation{
 			spanner.Insert("payloads",
 				[]string{
 					"sha256",
-					"payload"},
+					"gcs_path"},
 				[]interface{}{
 					sample.Sha256,
-					data,
+					fmt.Sprintf("gs://%s/%s", e.GCSBucket, name),
 				})})
 		if spanner.ErrCode(err) != codes.AlreadyExists && err != nil {
 			return fmt.Errorf("failed to insert data %v", err)
@@ -196,7 +223,7 @@ func (e *Exporter) insertSource(ctx context.Context, sourceHash, sourceID, sourc
 	var sourceIDs []string
 
 	sql := spanner.Statement{
-		SQL: `SELECT sourceID FROM sources WHERE sha256 = @sha256`,
+		SQL: `SELECT source_id FROM sources WHERE sha256 = @sha256`,
 		Params: map[string]interface{}{
 			"sha256": sourceHash,
 		},
@@ -218,11 +245,11 @@ func (e *Exporter) insertSource(ctx context.Context, sourceHash, sourceID, sourc
 		spanner.InsertOrUpdate("sources",
 			[]string{
 				"sha256",
-				"sourceID",
-				"sourcePath",
-				"sourceDescription",
-				"repoName",
-				"repoPath"},
+				"source_id",
+				"source_path",
+				"source_description",
+				"repo_name",
+				"repo_path"},
 			[]interface{}{
 				sourceHash,
 				append(sourceIDs, sourceID),
