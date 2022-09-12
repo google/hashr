@@ -20,7 +20,7 @@ import (
 
 const (
 	// Name contains name of the exporter.
-	Name = "gcp"
+	Name = "GCP"
 )
 
 // Exporter is an instance of GCP Exporter.

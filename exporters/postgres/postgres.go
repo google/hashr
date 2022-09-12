@@ -34,7 +34,7 @@ import (
 
 const (
 	// Name contains name of the exporter.
-	Name = "postgre"
+	Name = "postgres"
 )
 
 // Exporter is an instance of Postgres Exporter.
