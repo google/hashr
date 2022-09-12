@@ -40,18 +40,18 @@ import (
 )
 
 var (
-	processingWorkerCount   = flag.Int("processing_worker_count", 2, "Number of processing workers.")
-	importersToRun          = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName))
-	exportersToRun          = flag.String("exporters", strings.Join([]string{}, ","), fmt.Sprintf("Exporters to be run: %s,%s", gcpExporter.Name, postgresExporter.Name))
-	jobStorage              = flag.String("storage", "", "Storage that should be used for storing data about processing jobs, can have one of the two values: postgres, cloudspanner")
-	cacheDir                = flag.String("cache_dir", "/tmp/", "Path to cache dir used to store local cache.")
-	export                  = flag.Bool("export", true, "Whether to export samples, otherwise, they'll be saved to disk")
-	exportPath              = flag.String("export_path", "/tmp/hashr-uploads", "If export is set to false, this is the folder where samples will be saved.")
-	reprocess               = flag.String("reprocess", "", "Sha256 of sources that should be reprocessed")
-	spannerDBPath           = flag.String("spanner_db_path", "", "Path to spanner DB.")
-	uploadPayloads          = flag.Bool("upload_payloads", false, "If true the content of the files will be uploaded using defined exporters.")
-	cloudSpannerWorkerCount = flag.Int("cloudspanner_worker_count", 100, "Number of workers/goroutines that will be used to upload data to Cloud Spanner.")
-	gcpExporterGCSbucket    = flag.String("gcp_exporter_gcs_bucket", "", "Name of the GCS bucket which will be used by GCP exporter to store exported samples.")
+	processingWorkerCount  = flag.Int("processing_worker_count", 2, "Number of processing workers.")
+	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName))
+	exportersToRun         = flag.String("exporters", strings.Join([]string{}, ","), fmt.Sprintf("Exporters to be run: %s,%s", gcpExporter.Name, postgresExporter.Name))
+	jobStorage             = flag.String("storage", "", "Storage that should be used for storing data about processing jobs, can have one of the two values: postgres, cloudspanner")
+	cacheDir               = flag.String("cache_dir", "/tmp/", "Path to cache dir used to store local cache.")
+	export                 = flag.Bool("export", true, "Whether to export samples, otherwise, they'll be saved to disk")
+	exportPath             = flag.String("export_path", "/tmp/hashr-uploads", "If export is set to false, this is the folder where samples will be saved.")
+	reprocess              = flag.String("reprocess", "", "Sha256 of sources that should be reprocessed")
+	spannerDBPath          = flag.String("spanner_db_path", "", "Path to spanner DB.")
+	uploadPayloads         = flag.Bool("upload_payloads", false, "If true the content of the files will be uploaded using defined exporters.")
+	gcpExporterWorkerCount = flag.Int("gcp_exporter_worker_count", 100, "Number of workers/goroutines that will be used to upload data to Cloud Spanner.")
+	gcpExporterGCSbucket   = flag.String("gcp_exporter_gcs_bucket", "", "Name of the GCS bucket which will be used by GCP exporter to store exported samples.")
 
 	// Postgres DB flags
 	postgresHost     = flag.String("postgres_host", "localhost", "PostgreSQL instance address.")
@@ -156,7 +156,7 @@ func main() {
 				glog.Exitf("Could not initialize GCP Storage client: %v", err)
 			}
 
-			gceExporter, err := gcpExporter.NewExporter(spannerClient, storageClient, *gcpExporterGCSbucket, *uploadPayloads, *cloudSpannerWorkerCount)
+			gceExporter, err := gcpExporter.NewExporter(spannerClient, storageClient, *gcpExporterGCSbucket, *uploadPayloads, *gcpExporterWorkerCount)
 			if err != nil {
 				glog.Exitf("Error initializing Postgres exporter: %v", err)
 			}

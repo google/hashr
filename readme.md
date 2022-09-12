@@ -21,7 +21,7 @@
       - [WSUS](#wsus)
     - [Setting up exporters](#setting-up-exporters)
       - [Setting up Postgres exporter](#setting-up-postgres-exporter)
-      - [Setting up Cloud Spanner exporter](#setting-up-cloud-spanner-exporter)
+      - [Setting up GCP exporter](#setting-up-gcp-exporter)
     - [Additional flags](#additional-flags)
 
 ## About 
@@ -369,11 +369,11 @@ If you didn't choose Postgres for processing job storage follow steps 1 & 2 from
 
 This is currently the default exporter, you don't need to explicitly enable it. By default the content of the actual files won't be uploaded to PostgreSQL DB, if you wish to change that use `-upload_payloads true` flag. 
 
-In order for the Postgres exporter to work you need to set the following flags: `-postgresHost <host> -postgresPort <port> -postgresUser <user> -postgresPassword <pass> -postgresDBName <db_name>`
+In order for the Postgres exporter to work you need to set the following flags: `-exporters postgres -postgresHost <host> -postgresPort <port> -postgresUser <user> -postgresPassword <pass> -postgresDBName <db_name>`
 
-#### Setting up Cloud Spanner exporter 
+#### Setting up GCP exporter 
 
-Cloud Spanner exporter allows sending of hashes, file metadata and the actual content of the file to a GCP Spanner instance. If you haven't set up Cloud Spanner for storing processing jobs, follow the steps in [Setting up Cloud Spanner](####setting-up-cloud-spanner) and instead of the last step run the following command to create necessary tables: 
+GCP exporter allows sending of hashes, file metadata to GCP Spanner instance. Optionally you can upload the extracted files to GCS bucket. If you haven't set up Cloud Spanner for storing processing jobs, follow the steps in [Setting up Cloud Spanner](####setting-up-cloud-spanner) and instead of the last step run the following command to create necessary tables: 
 
 ``` shell
 gcloud spanner databases ddl update hashr --instance=hashr --ddl-file=scripts/CreateCloudSpannerExporterTables.ddl
@@ -381,15 +381,29 @@ gcloud spanner databases ddl update hashr --instance=hashr --ddl-file=scripts/Cr
 
 If you have already set up Cloud Spanner for storing jobs data you just need to the run the command above and you're ready to go. 
 
+If you'd like to upload the extracted files to GCS you need to create the GCS bucket:
+
+Step 1: Make the service account admin of this bucket: 
+``` shell
+gsutil mb -p project_name> gs://<gcs_bucket_name>
+```
+
+Step 2: Make the service account admin of this bucket: 
+``` shell
+gsutil iam ch serviceAccount:hashr@<project_name>.iam.gserviceaccount.com:objectAdmin gs://<gcs_bucket_name>
+```
+
+To use this exporter you need to provide the following flags: `-exporters GCP -gcp_exporter_gcs_bucket <gcs_bucket_name>`
+
 ### Additional flags
 
-1. `-processingWorkerCount`: This flag controls number of parallel processing workers. Processing is CPU and I/O heavy, during my testing I found that having 2 workers is the most optimal solution. 
-1. `-cacheDir`: Location of local cache used for deduplication, it's advised to change that from `/tmp` to e.g. home directory of the user that will be running hashr.
+1. `-processing_worker_count`: This flag controls number of parallel processing workers. Processing is CPU and I/O heavy, during my testing I found that having 2 workers is the most optimal solution. 
+1. `-cache_dir`: Location of local cache used for deduplication, it's advised to change that from `/tmp` to e.g. home directory of the user that will be running hashr.
 1. `-export`: When set to false hashr will save the results to disk bypassing the exporter. 
-1. `-exportPath`: If export is set to false, this is the folder where samples will be saved.
+1. `-export_path`: If export is set to false, this is the folder where samples will be saved.
 1. `-reprocess`: Allows to reprocess a given source (in case it e.g. errored out) based on the sha256 value stored in the jobs table. 
-1. `-uploadPayloads`: Controls if the actual content of the file will be uploaded by defined exporters.
-2. `-cloudSpannerWorkerCount`: Number of workers/goroutines that will be used to upload data to Cloud Spanner.
+1. `-upload_payloads`: Controls if the actual content of the file will be uploaded by defined exporters.
+2. `-gcp_exporter_worker_count`: Number of workers/goroutines that the GCP exporter will use to upload the data.
 
 
 This is not an officially supported Google product.
