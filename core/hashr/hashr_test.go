@@ -223,7 +223,7 @@ func TestRun(t *testing.T) {
 			glog.Fatalf("error creating test spanner client: %v", err)
 		}
 
-		hdb := New([]Importer{&testImporter{}}, &testProcessor{}, &testExporter{}, spannerStorage)
+		hdb := New([]Importer{&testImporter{}}, &testProcessor{}, []Exporter{&testExporter{}}, spannerStorage)
 		hdb.CacheDir = "/tmp/"
 		hdb.Export = tc.export
 		hdb.ExportPath = tc.exportPath

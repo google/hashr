@@ -19,7 +19,9 @@
       - [GCP](#gcp)
       - [Windows](#windows)
       - [WSUS](#wsus)
-    - [Setting up Postgres exporter](#setting-up-postgres-exporter)
+    - [Setting up exporters](#setting-up-exporters)
+      - [Setting up Postgres exporter](#setting-up-postgres-exporter)
+      - [Setting up Cloud Spanner exporter](#setting-up-cloud-spanner-exporter)
     - [Additional flags](#additional-flags)
 
 ## About 
@@ -30,7 +32,7 @@ HashR consists of the following components:
 
 1. Importers, which are responsible for copying the source to local storage and doing any required preprocessing.
 1. Core, which takes care of extracting the content from the source using image_export.py (Plaso), caching and repository level deduplication and preparing the extracted files for the exporters.
-1. Exporters, which are responsible for exporting files, metadata and hashes to given data sinks. Currently the main exporter is the Postgres exporter.
+1. Exporters, which are responsible for exporting files, metadata and hashes to given data sinks.
 
 Currently implemented importers: 
 
@@ -39,7 +41,10 @@ Currently implemented importers:
 1. Windows, which extracts files from Windows installation media in ISO-13346 format. 
 1. WSUS, which extracts files from Windows Update packages.  
 
-Once files are extracted and hashed results will be passed to the exporter, currently the only available exporter is PostgreSQL. 
+Once files are extracted and hashed results will be passed to the exporters, currently implemented exporters:
+
+1. PostgreSQL, which upload the data to PostgreSQL instance. 
+1. Cloud Spanner, which uploads the data to GCP Spanner instance. 
 
 You can choose which importers you want to run, each one have different requirements. More about this can be found in sections below. 
 
@@ -51,6 +56,8 @@ HashR requires Linux OS to run, this can be a physical, virtual or cloud machine
 1. 8-16 cores 
 1. 128GB memory 
 1. 2TB fast local storage (SSDs preferred)
+
+HashR can likely run how machines with lower specifications, however this was not thoroughly tested.
 
 ## Building HashR binary and running tests 
 
@@ -166,19 +173,19 @@ Create Spanner database:
 gcloud spanner databases create hashr --instance=hashr
 ```
 
-Update Spanner database schema: 
-
-``` shell
-gcloud spanner databases ddl update hashr --instance=hashr --ddl-file=scripts/CreateJobsTable.ddl
-```
-
 Allow the service account to use Spanner database, set *<project_name>* to your project name:
 
 ``` shell
 gcloud spanner databases add-iam-policy-binding hashr --instance hashr --member="serviceAccount:hashr@<project_name>.iam.gserviceaccount.com" --role="roles/spanner.databaseUser" 
 ```
 
-In order to use PostgreSQL to store information about processing tasks you need to specify the following flags: `-jobStorage cloudspanner -spannerDBPath <spanner_db_path>`
+Update Spanner database schema: 
+
+``` shell
+gcloud spanner databases ddl update hashr --instance=hashr --ddl-file=scripts/CreateJobsTable.ddl
+```
+
+In order to use Cloud Spanner to store information about processing tasks you need to specify the following flags: `-jobStorage cloudspanner -spannerDBPath <spanner_db_path>`
 
 ### Setting up importers 
 
@@ -349,7 +356,9 @@ gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/
 
 This will dump the relevant information from WSUS DB, store it in the `export.csv` file and sync the contents of the WSUS folder with GCS bucket. WSUS importer will check if `export.csv` file is present in the root of the WSUS repo, if so it will use it. 
 
-### Setting up Postgres exporter 
+### Setting up exporters 
+
+#### Setting up Postgres exporter 
 
 Postgres exporter allows sending of hashes, file metadata and the actual content of the file to a PostgreSQL instance. For best performance it's advised to set it up on a separate and dedicated machine. 
 If you did set up PostgreSQL while choosing the processing jobs storage you're almost good to go, just run the following command to create the required tables: 
@@ -362,6 +371,16 @@ This is currently the default exporter, you don't need to explicitly enable it. 
 
 In order for the Postgres exporter to work you need to set the following flags: `-postgresHost <host> -postgresPort <port> -postgresUser <user> -postgresPassword <pass> -postgresDBName <db_name>`
 
+#### Setting up Cloud Spanner exporter 
+
+Cloud Spanner exporter allows sending of hashes, file metadata and the actual content of the file to a GCP Spanner instance. If you haven't set up Cloud Spanner for storing processing jobs, follow the steps in [Setting up Cloud Spanner](####setting-up-cloud-spanner) and instead of the last step run the following command to create necessary tables: 
+
+``` shell
+gcloud spanner databases ddl update hashr --instance=hashr --ddl-file=scripts/CreateCloudSpannerExporterTables.ddl
+```
+
+If you have already set up Cloud Spanner for storing jobs data you just need to the run the command above and you're ready to go. 
+
 ### Additional flags
 
 1. `-processingWorkerCount`: This flag controls number of parallel processing workers. Processing is CPU and I/O heavy, during my testing I found that having 2 workers is the most optimal solution. 
@@ -369,6 +388,8 @@ In order for the Postgres exporter to work you need to set the following flags: 
 1. `-export`: When set to false hashr will save the results to disk bypassing the exporter. 
 1. `-exportPath`: If export is set to false, this is the folder where samples will be saved.
 1. `-reprocess`: Allows to reprocess a given source (in case it e.g. errored out) based on the sha256 value stored in the jobs table. 
+1. `-uploadPayloads`: Controls if the actual content of the file will be uploaded by defined exporters.
+2. `-cloudSpannerWorkerCount`: Number of workers/goroutines that will be used to upload data to Cloud Spanner.
 
 
 This is not an officially supported Google product.

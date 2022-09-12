@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -92,7 +93,7 @@ type Exporter interface {
 type HashR struct {
 	Importers              []Importer
 	Processor              Processor
-	Exporter               Exporter
+	Exporters              []Exporter
 	Storage                Storage
 	ProcessingWorkerCount  int
 	ExportWorkerCount      int
@@ -138,8 +139,8 @@ const (
 )
 
 // New returns new instance of hashR.
-func New(importers []Importer, processor Processor, exporter Exporter, storage Storage) *HashR {
-	return &HashR{Importers: importers, Processor: processor, Exporter: exporter, Storage: storage}
+func New(importers []Importer, processor Processor, exporters []Exporter, storage Storage) *HashR {
+	return &HashR{Importers: importers, Processor: processor, Exporters: exporters, Storage: storage}
 }
 
 // newSources returns sources that were not yet processed.
@@ -367,14 +368,23 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 
 		// TODO(mlegin): Iterate over all definied exporters.
 		if h.Export {
+			var errs []string
 			start := time.Now()
-			glog.Infof("Exporting samples from %s with %s hash", source.ID(), extraction.SourceSHA256)
-			err = h.Exporter.Export(ctx, source.RepoName(), source.RepoPath(), extraction.SourceID, extraction.SourceSHA256, source.RemotePath(), source.Description(), samples)
-			if err != nil {
-				h.handleError(ctx, qHash, extraction.BaseDir, h.processingSources[qHash], err)
+			for _, exporter := range h.Exporters {
+				glog.Infof("Exporting samples from %s with %s hash using %s exporter", source.ID(), extraction.SourceSHA256, exporter.Name())
+				err = exporter.Export(ctx, source.RepoName(), source.RepoPath(), extraction.SourceID, extraction.SourceSHA256, source.RemotePath(), source.Description(), samples)
+				if err != nil {
+					errs = append(errs, err.Error())
+				}
+				glog.Infof("Done exporting samples from %s with %s using %s exporter", source.ID(), extraction.SourceSHA256, exporter.Name())
+			}
+
+			if len(errs) > 0 {
+				h.handleError(ctx, qHash, extraction.BaseDir, h.processingSources[qHash], errors.New(strings.Join(errs, ";")))
 				h.mu.Unlock()
 				continue
 			}
+
 			h.processingSources[qHash].ExportDuration = time.Since(start)
 			h.processingSources[qHash].SampleCount = len(samples)
 			for _, sample := range samples {
@@ -390,8 +400,6 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 				continue
 			}
 		}
-
-		glog.Infof("Done exporting samples from %s with %s hash", source.ID(), extraction.SourceSHA256)
 
 		h.processingSources[qHash].Status = exported
 		if err := h.Storage.UpdateJobs(ctx, qHash, h.processingSources[qHash]); err != nil {
