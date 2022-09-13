@@ -181,18 +181,18 @@ func (r *Repo) RepoPath() string {
 
 // DiscoverRepo traverses GCP project and looks for images.
 func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
-	imageList, err := computeClient.Images.List(r.projectName).Do()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, image := range imageList.Items {
-		if image.Deprecated != nil {
-			glog.Infof("Image %s is deprecated, skipping.", image.Name)
-			continue
+	req := computeClient.Images.List(r.projectName)
+	if err := req.Pages(context.Background(), func(page *compute.ImageList) error {
+		for _, image := range page.Items {
+			if image.Deprecated != nil {
+				glog.Infof("Image %s is deprecated, skipping.", image.Name)
+				continue
+			}
+			r.images = append(r.images, &Image{id: fmt.Sprintf("%s-%s", r.projectName, image.Name), name: image.Name, project: r.projectName, description: image.Description})
 		}
-
-		r.images = append(r.images, &Image{id: fmt.Sprintf("%s-%s", r.projectName, image.Name), name: image.Name, project: r.projectName, description: image.Description})
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	var sources []hashr.Source
