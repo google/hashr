@@ -97,7 +97,7 @@ We also need two additional tools installed on the machine running HashR:
 You can install both with the following command: 
 
 ``` shell
-sudo apt install p7zip-full, sleuthkit
+sudo apt install p7zip-full sleuthkit
 ```
 
 You need to allow the user, under which HashR will run, to run certain commands via sudo. Assuming that your user is `hashr` create a file `/etc/sudoers.d/hashr` and put in: 
