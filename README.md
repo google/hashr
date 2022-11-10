@@ -106,6 +106,13 @@ You need to allow the user, under which HashR will run, to run certain commands 
 hashr ALL = (root) NOPASSWD: /bin/mount,/bin/umount,/sbin/losetup,/bin/rm
 ```
 
+The user under which HashR will run will also need to be able to run docker. Assuming that your user is `hashr`, add them to the docker group like this:
+
+``` shell
+sudo usermod -aG docker hashr
+```
+
+
 ### Setting up storage for processing tasks
 
 HashR needs to store information about processed sources. It also stores additional telemetry about processing tasks: processing times, number of extracted files, etc. You can choose between using:
@@ -135,7 +142,7 @@ Step 3: Create a table that will be used to store processing jobs.
 cat scripts/CreateJobsTable.sql | docker exec -i hashr_postgresql psql -U hashr -d hashr
 ```
 
-In order to use PostgreSQL to store information about processing tasks you need to specify the following flags: `-jobsStorage postgres -postgresHost <host> -postgresPort <port> -postgresUser <user> -postgresPassword <pass> -postgresDBName <db_name>`
+In order to use PostgreSQL to store information about processing tasks you need to specify the following flags: `-storage postgres -postgres_host <host> -postgres_port <port> -postgres_user <user> -postgres_password <pass> -postgres_db <db_name>`
 
 #### Setting up Cloud Spanner
 
