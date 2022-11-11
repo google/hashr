@@ -77,6 +77,12 @@ func ExtractTarGz(tarGzPath, outputFolder string) error {
 				}
 			}
 		case tar.TypeReg:
+			if _, err := os.Stat(filepath.Dir(destEntry)); os.IsNotExist(err) {
+				if err := os.MkdirAll(filepath.Dir(destEntry), 0755); err != nil {
+					return fmt.Errorf("error while creating destination directory: %v", err)
+				}
+			}
+			
 			destFile, err := os.Create(destEntry)
 			if err != nil {
 				return fmt.Errorf("error while creating destination file: %v", err)
