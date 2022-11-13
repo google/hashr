@@ -16,12 +16,11 @@
 package deb
 
 import (
-	"bytes"
+	"archive/tar"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -29,6 +28,8 @@ import (
 
 	"github.com/google/hashr/core/hashr"
 	"github.com/google/hashr/importers/common"
+
+	"pault.ag/go/debian/deb"
 )
 
 const (
@@ -46,35 +47,100 @@ type Archive struct {
 	repoPath        string
 }
 
-var execute = func(name string, args ...string) *exec.Cmd {
-	glog.Infof("name: %v, args: %v", name, args)
-	return exec.Command(name, args...)
+func subElem(parent, sub string) (bool, error) {
+	up := ".." + string(os.PathSeparator)
+
+	// path-comparisons using filepath.Abs don't work reliably according to docs (no unique representation).
+	rel, err := filepath.Rel(parent, sub)
+	if err != nil {
+		return false, err
+	}
+	if !strings.HasPrefix(rel, up) && rel != ".." {
+		return true, nil
+	}
+	return false, nil
 }
 
-func shellCommand(binary string, args ...string) (string, error) {
-	cmd := execute(binary, args...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+func extractTar(tarfile *tar.Reader, outputFolder string) error {
+	for {
+		header, err := tarfile.Next()
 
-	err := cmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("error while executing %s: %v\nStdout: %v\nStderr: %v", binary, err, stdout.String(), stderr.String())
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return fmt.Errorf("error while unpacking deb package: %v", err)
+		}
+
+		name := header.Name
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			continue
+		case tar.TypeReg:
+			unpackPath := filepath.Join(outputFolder, name)
+			unpackFolder := filepath.Dir(unpackPath)
+			fmt.Printf("a: %s, b: %s", unpackFolder, unpackPath)
+			if _, err := os.Stat(unpackFolder); os.IsNotExist(err) {
+				if err2 := os.MkdirAll(unpackFolder, 0755); err2 != nil {
+					return fmt.Errorf("error while creating target directory: %v", err2)
+				}
+			}
+
+			is_subelem, err := subElem(outputFolder, unpackPath)
+			if err != nil || !is_subelem {
+				return fmt.Errorf("error, deb package tried to unpack file above parent")
+			}
+
+			unpackFileHandle, err := os.Create(unpackPath)
+			if err != nil {
+				return fmt.Errorf("error while creating destination file: %v", err)
+			}
+			defer unpackFileHandle.Close()
+			io.Copy(unpackFileHandle, tarfile)
+
+		default:
+			fmt.Printf("%s : %c %s %s\n", "Unknown tar entry type", header.Typeflag, "in file", name)
+		}
 	}
 
-	return stdout.String(), nil
+	return nil
 }
 
-func ExtractDeb(debPath, outputFolder string) error {
+func extractDeb(debPath, outputFolder string) error {
 	if _, err := os.Stat(outputFolder); os.IsNotExist(err) {
 		if err2 := os.MkdirAll(outputFolder, 0755); err2 != nil {
 			return fmt.Errorf("error while creating target directory: %v", err2)
 		}
 	}
 
-	_, err := shellCommand("dpkg-deb", "-vx", debPath, outputFolder)
+	fd, err := os.Open(debPath)
 	if err != nil {
-		return fmt.Errorf("error while executing dpkg-deb cmd: %v", err)
+		return fmt.Errorf("failed to open deb file: %v", err)
+	}
+	defer fd.Close()
+
+	debFile, err := deb.Load(fd, debPath)
+	if err != nil {
+		return fmt.Errorf("failed to parse deb file: %v", err)
+	}
+
+	for _, arentry := range debFile.ArContent {
+		if !arentry.IsTarfile() {
+			continue
+		}
+
+		tarfile, closer, err := arentry.Tarfile()
+		if err != nil {
+			return fmt.Errorf("error while opening tar archive in deb package: %v", err)
+		}
+		defer closer.Close()
+
+		err = extractTar(tarfile, outputFolder)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -91,7 +157,7 @@ func (a *Archive) Preprocess() (string, error) {
 	baseDir, _ := filepath.Split(a.localPath)
 	extractionDir := filepath.Join(baseDir, "extracted")
 
-	if err := ExtractDeb(a.localPath, extractionDir); err != nil {
+	if err := extractDeb(a.localPath, extractionDir); err != nil {
 		return "", err
 	}
 
