@@ -74,7 +74,7 @@ func ExtractDeb(debPath, outputFolder string) error {
 
 	_, err := shellCommand("dpkg-deb", "-vx", debPath, outputFolder)
 	if err != nil {
-		return fmt.Errorf("error while executing mount cmd: %v", err)
+		return fmt.Errorf("error while executing dpkg-deb cmd: %v", err)
 	}
 
 	return nil
