@@ -26,6 +26,7 @@ import (
 	"github.com/google/hashr/core/hashr"
 	gcpExporter "github.com/google/hashr/exporters/gcp"
 	postgresExporter "github.com/google/hashr/exporters/postgres"
+	"github.com/google/hashr/importers/deb"
 	"github.com/google/hashr/importers/gcp"
 	"github.com/google/hashr/importers/targz"
 	"github.com/google/hashr/importers/windows"
@@ -41,7 +42,7 @@ import (
 
 var (
 	processingWorkerCount  = flag.Int("processing_worker_count", 2, "Number of processing workers.")
-	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName))
+	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName))
 	exportersToRun         = flag.String("exporters", strings.Join([]string{}, ","), fmt.Sprintf("Exporters to be run: %s,%s", gcpExporter.Name, postgresExporter.Name))
 	jobStorage             = flag.String("storage", "", "Storage that should be used for storing data about processing jobs, can have one of the two values: postgres, cloudspanner")
 	cacheDir               = flag.String("cache_dir", "/tmp/", "Path to cache dir used to store local cache.")
@@ -69,6 +70,8 @@ var (
 	windowsRepoPath = flag.String("windows_iso_repo_path", "", "Path to Windows ISO repository.")
 	// tarGz importer flags
 	tarGzRepoPath = flag.String("targz_repo_path", "", "Path to TarGz repository.")
+	// deb importer flags
+	debRepoPath = flag.String("deb_repo_path", "", "Path to Deb repository.")
 )
 
 func main() {
@@ -123,6 +126,8 @@ func main() {
 			}
 		case targz.RepoName:
 			importers = append(importers, targz.NewRepo(*tarGzRepoPath))
+		case deb.RepoName:
+			importers = append(importers, deb.NewRepo(*debRepoPath))
 		}
 	}
 

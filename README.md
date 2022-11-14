@@ -16,6 +16,7 @@
       - [Setting up Cloud Spanner](#setting-up-cloud-spanner)
     - [Setting up importers](#setting-up-importers)
       - [TarGz](#targz)
+      - [Deb](#deb)
       - [GCP](#gcp)
       - [Windows](#windows)
       - [WSUS](#wsus)
@@ -204,6 +205,13 @@ In order to specify which importer you want to run you should use the `-importer
 This is a simple importer that traverses repositories and looks for `.tar.gz` files. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
 
 1. `-targz_repo_path` which should point to the path on the local file system that contains `.tar.gz` files
+
+#### Deb 
+
+This is very similar to the TarGz importer except that it looks for `.deb` packages. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+
+1. `-deb_repo_path` which should point to the path on the local file system that contains `.deb` files
+
 
 #### GCP 
 
