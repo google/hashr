@@ -47,7 +47,7 @@ type Archive struct {
 	repoPath        string
 }
 
-func subElem(parent, sub string) (bool, error) {
+func isSubElem(parent, sub string) (bool, error) {
 	up := ".." + string(os.PathSeparator)
 
 	// path-comparisons using filepath.Abs don't work reliably according to docs (no unique representation).
@@ -88,7 +88,7 @@ func extractTar(tarfile *tar.Reader, outputFolder string) error {
 				}
 			}
 
-			is_subelem, err := subElem(outputFolder, unpackPath)
+			is_subelem, err := isSubElem(outputFolder, unpackPath)
 			if err != nil || !is_subelem {
 				return fmt.Errorf("error, deb package tried to unpack file above parent")
 			}
@@ -101,7 +101,7 @@ func extractTar(tarfile *tar.Reader, outputFolder string) error {
 			io.Copy(unpackFileHandle, tarfile)
 
 		default:
-			fmt.Printf("%s : %c %s %s\n", "Unknown tar entry type", header.Typeflag, "in file", name)
+			fmt.Printf("Unknown tar entry type: %c in file %s\n", header.Typeflag, name)
 		}
 	}
 
@@ -126,12 +126,12 @@ func extractDeb(debPath, outputFolder string) error {
 		return fmt.Errorf("failed to parse deb file: %v", err)
 	}
 
-	for _, arentry := range debFile.ArContent {
-		if !arentry.IsTarfile() {
+	for _, arEntry := range debFile.ArContent {
+		if !arEntry.IsTarfile() {
 			continue
 		}
 
-		tarfile, closer, err := arentry.Tarfile()
+		tarfile, closer, err := arEntry.Tarfile()
 		if err != nil {
 			return fmt.Errorf("error while opening tar archive in deb package: %v", err)
 		}
