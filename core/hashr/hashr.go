@@ -372,7 +372,7 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 			start := time.Now()
 			for _, exporter := range h.Exporters {
 				glog.Infof("Exporting samples from %s with %s hash using %s exporter", source.ID(), extraction.SourceSHA256, exporter.Name())
-				err = exporter.Export(ctx, source.RepoName(), source.RepoPath(), extraction.SourceID, extraction.SourceSHA256, source.RemotePath(), source.Description(), samples)
+				err = exporter.Export(ctx, source.RepoName(), source.RepoPath(), extraction.SourceID, extraction.SourceSHA256, source.LocalPath(), source.Description(), samples)
 				if err != nil {
 					errs = append(errs, err.Error())
 				}
