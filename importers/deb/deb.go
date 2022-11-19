@@ -81,15 +81,14 @@ func extractTar(tarfile *tar.Reader, outputFolder string) error {
 		case tar.TypeReg:
 			unpackPath := filepath.Join(outputFolder, name)
 			unpackFolder := filepath.Dir(unpackPath)
-			fmt.Printf("a: %s, b: %s", unpackFolder, unpackPath)
 			if _, err := os.Stat(unpackFolder); os.IsNotExist(err) {
 				if err2 := os.MkdirAll(unpackFolder, 0755); err2 != nil {
 					return fmt.Errorf("error while creating target directory: %v", err2)
 				}
 			}
 
-			is_subelem, err := isSubElem(outputFolder, unpackPath)
-			if err != nil || !is_subelem {
+			fileIsSubelem, err := isSubElem(outputFolder, unpackPath)
+			if err != nil || !fileIsSubelem {
 				return fmt.Errorf("error, deb package tried to unpack file above parent")
 			}
 
