@@ -106,6 +106,7 @@ type HashR struct {
 	wg                     sync.WaitGroup
 	mu                     sync.Mutex
 	processingSources      map[string]*ProcessingSource
+	processingSourcesMutex sync.RWMutex
 }
 
 // ProcessingSource holds data related to a processing source.
@@ -254,6 +255,7 @@ func sha256sum(path string) (string, error) {
 // Run executes main processing loop for hashR.
 func (h *HashR) Run(ctx context.Context) error {
 	h.processingSources = make(map[string]*ProcessingSource)
+	h.processingSourcesMutex = sync.RWMutex{}
 	h.cacheSaveCounter = 0
 
 	for _, importer := range h.Importers {
@@ -321,7 +323,9 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 			continue
 		}
 
+		h.processingSourcesMutex.Lock()
 		h.processingSources[qHash] = &ProcessingSource{Repo: source.RepoName(), RepoPath: source.RepoPath(), ID: source.ID(), RemoteSourcePath: source.RemotePath(), ImportedAt: time.Now().Unix(), Status: discovered}
+		h.processingSourcesMutex.Unlock()
 
 		if err := h.Storage.UpdateJobs(ctx, qHash, h.processingSources[qHash]); err != nil {
 			glog.Errorf("could not update storage: %v", err)
