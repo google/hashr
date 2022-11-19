@@ -76,8 +76,13 @@ func extractTar(tarfile *tar.Reader, outputFolder string) error {
 		name := header.Name
 
 		switch header.Typeflag {
+		case tar.TypeSymlink:
+			continue
+
 		case tar.TypeDir:
 			continue
+
+		case tar.TypeRegA:
 		case tar.TypeReg:
 			unpackPath := filepath.Join(outputFolder, name)
 			unpackFolder := filepath.Dir(unpackPath)
