@@ -16,7 +16,6 @@
 package rpm
 
 import (
-	"archive/tar"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -45,67 +44,6 @@ type Archive struct {
 	localPath       string
 	quickSha256hash string
 	repoPath        string
-}
-
-func isSubElem(parent, sub string) (bool, error) {
-	up := ".." + string(os.PathSeparator)
-
-	// path-comparisons using filepath.Abs don't work reliably according to docs (no unique representation).
-	rel, err := filepath.Rel(parent, sub)
-	if err != nil {
-		return false, err
-	}
-	if !strings.HasPrefix(rel, up) && rel != ".." {
-		return true, nil
-	}
-	return false, nil
-}
-
-func extractTar(tarfile *tar.Reader, outputFolder string) error {
-	for {
-		header, err := tarfile.Next()
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return fmt.Errorf("error while unpacking rpm package: %v", err)
-		}
-
-		name := header.Name
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			continue
-		case tar.TypeReg:
-			unpackPath := filepath.Join(outputFolder, name)
-			unpackFolder := filepath.Dir(unpackPath)
-			fmt.Printf("a: %s, b: %s", unpackFolder, unpackPath)
-			if _, err := os.Stat(unpackFolder); os.IsNotExist(err) {
-				if err2 := os.MkdirAll(unpackFolder, 0755); err2 != nil {
-					return fmt.Errorf("error while creating target directory: %v", err2)
-				}
-			}
-
-			is_subelem, err := isSubElem(outputFolder, unpackPath)
-			if err != nil || !is_subelem {
-				return fmt.Errorf("error, rpm package tried to unpack file above parent")
-			}
-
-			unpackFileHandle, err := os.Create(unpackPath)
-			if err != nil {
-				return fmt.Errorf("error while creating destination file: %v", err)
-			}
-			defer unpackFileHandle.Close()
-			io.Copy(unpackFileHandle, tarfile)
-
-		default:
-			fmt.Printf("Unknown tar entry type: %c in file %s\n", header.Typeflag, name)
-		}
-	}
-
-	return nil
 }
 
 func extractrpm(rpmPath, outputFolder string) error {
