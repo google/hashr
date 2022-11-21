@@ -46,7 +46,7 @@ type Archive struct {
 	repoPath        string
 }
 
-func extractrpm(rpmPath, outputFolder string) error {
+func extractRPM(rpmPath, outputFolder string) error {
 	if _, err := os.Stat(outputFolder); os.IsNotExist(err) {
 		if err2 := os.MkdirAll(outputFolder, 0755); err2 != nil {
 			return fmt.Errorf("error while creating target directory: %v", err2)
@@ -83,7 +83,7 @@ func (a *Archive) Preprocess() (string, error) {
 	baseDir, _ := filepath.Split(a.localPath)
 	extractionDir := filepath.Join(baseDir, "extracted")
 
-	if err := extractrpm(a.localPath, extractionDir); err != nil {
+	if err := extractRPM(a.localPath, extractionDir); err != nil {
 		return "", err
 	}
 
