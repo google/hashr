@@ -10,7 +10,7 @@
   - [Requirements](#requirements)
   - [Building HashR binary and running tests](#building-hashr-binary-and-running-tests)
   - [Setting up HashR](#setting-up-hashr)
-    - [OS configuration & required 3rd party tooling](#os-configuration--required-3rd-party-tooling)
+    - [OS configuration \& required 3rd party tooling](#os-configuration--required-3rd-party-tooling)
     - [Setting up storage for processing tasks](#setting-up-storage-for-processing-tasks)
       - [Setting up PostgreSQL storage](#setting-up-postgresql-storage)
       - [Setting up Cloud Spanner](#setting-up-cloud-spanner)
@@ -18,7 +18,8 @@
       - [TarGz](#targz)
       - [Deb](#deb)
       - [RPM](#rpm)
-      - [GCP](#gcp)
+      - [GCP (Google Cloud Platform)](#gcp-google-cloud-platform)
+      - [GCR (Google Container Registry)](#gcr-google-container-registry)
       - [Windows](#windows)
       - [WSUS](#wsus)
     - [Setting up exporters](#setting-up-exporters)
@@ -219,7 +220,7 @@ This is very similar to the TarGz importer except that it looks for `.rpm` packa
 
 1. `-rpm_repo_path` which should point to the path on the local file system that contains `.rpm` files
 
-#### GCP 
+#### GCP (Google Cloud Platform)
 
 This importer can extract files from GCP disk [images](https://cloud.google.com/compute/docs/images). This is done in few steps: 
 
@@ -230,7 +231,7 @@ This importer can extract files from GCP disk [images](https://cloud.google.com/
 1. Copy raw_disk.tar.gz from GCS to local hashR storage
 1. Extract raw_disk.tar.gz and pass the disk image to Plaso 
 
-List of GCP projects containing public GCP images can be found [here](https://cloud.google.com/compute/docs/images/os-details#general-info). In order to use this importer you need to have a GCP project and follow these steps: 
+List of GCP projects containing public GCP images can be found [here](https://cloud.google.com/compute/docs/images/os-details#general-info). In order to use this importer you need to have a GCP project and follow these steps:
 
 Step 1: Create HashR service account, if this was done while setting up Cloud Spanner please go to step 4.
 
@@ -324,6 +325,37 @@ To use this importer you need to specify the following flag(s):
 1. `-hashrGCPProject` GCP project that will be used to store copy of disk images for processing and also run Cloud Build 
 1. `-hashrGCSBucket` GCS bucket that will be used to store output of Cloud Build (disk images in .tar.gz format)
 
+#### GCR (Google Container Registry) 
+This importer extracts files from container images stored in GCR repositories. In order to set ip up follow these steps: 
+
+Step 1: Create HashR service account, skip to step 4 if this was done while setting up other GCP dependent components.
+
+``` shell
+gcloud iam service-accounts create hashr-sa --description="HashR SA key." --display-name="hashr"
+```
+
+Step 2: Create service account key and store in your home directory. Make sure to  set *<project_name>* to your project name:
+
+``` shell
+gcloud iam service-accounts keys create ~/hashr-sa-private-key.json --iam-account=hashr-sa@<project_name>.iam.gserviceaccount.com
+```
+
+Step 3: Point GOOGLE_APPLICATION_CREDENTIALS env variable to your service account key:
+
+``` shell
+export GOOGLE_APPLICATION_CREDENTIALS=~/hashr-sa-private-key.json
+```
+
+Step 4: Grant hashR service account key required permissions to access given GCR repository. 
+
+``` shell
+gsutil iam ch serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com:objectViewer gs://artifacts.<project_name_hosting_gcr_repo>.appspot.com
+```
+
+To use this importer you need to specify the following flag(s): 
+
+1. `-gcr_repos` which should contain comma separated list of GCR repositories from which you want to import the container images.
+   
 #### Windows 
 
 This importer extracts files from official Windows installation media in ISO-13346 format, e.g. the ones you can download from official Microsoft [website](https://www.microsoft.com/en-gb/software-download/windows10ISO). 

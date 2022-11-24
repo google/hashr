@@ -28,6 +28,7 @@ import (
 	postgresExporter "github.com/google/hashr/exporters/postgres"
 	"github.com/google/hashr/importers/deb"
 	"github.com/google/hashr/importers/gcp"
+	"github.com/google/hashr/importers/gcr"
 	"github.com/google/hashr/importers/rpm"
 	"github.com/google/hashr/importers/targz"
 	"github.com/google/hashr/importers/windows"
@@ -35,6 +36,7 @@ import (
 	"github.com/google/hashr/processors/local"
 	"github.com/google/hashr/storage/cloudspanner"
 	"github.com/google/hashr/storage/postgres"
+	"golang.org/x/oauth2/google"
 
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/compute/v1"
@@ -43,7 +45,7 @@ import (
 
 var (
 	processingWorkerCount  = flag.Int("processing_worker_count", 2, "Number of processing workers.")
-	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName))
+	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName, gcr.RepoName))
 	exportersToRun         = flag.String("exporters", strings.Join([]string{}, ","), fmt.Sprintf("Exporters to be run: %s,%s", gcpExporter.Name, postgresExporter.Name))
 	jobStorage             = flag.String("storage", "", "Storage that should be used for storing data about processing jobs, can have one of the two values: postgres, cloudspanner")
 	cacheDir               = flag.String("cache_dir", "/tmp/", "Path to cache dir used to store local cache.")
@@ -75,6 +77,8 @@ var (
 	debRepoPath = flag.String("deb_repo_path", "", "Path to Deb repository.")
 	// rpm importer flags
 	rpmRepoPath = flag.String("rpm_repo_path", "", "Path to RPM repository.")
+	// GCR importer flags
+	gcrRepos = flag.String("gcr_repos", "", "Comma separated list of GCR (Google Container Registry) repos.")
 )
 
 func main() {
@@ -133,6 +137,18 @@ func main() {
 			importers = append(importers, deb.NewRepo(*debRepoPath))
 		case rpm.RepoName:
 			importers = append(importers, rpm.NewRepo(*rpmRepoPath))
+		case gcr.RepoName:
+			tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
+			if err != nil {
+				glog.Exit(err)
+			}
+			for _, gcrRepo := range strings.Split(*gcrRepos, ",") {
+				r, err := gcr.NewRepo(ctx, tokenSource, gcrRepo)
+				if err != nil {
+					glog.Exit(err)
+				}
+				importers = append(importers, r)
+			}
 		}
 	}
 
