@@ -147,7 +147,7 @@ func NewRepo(ctx context.Context, oauth2Token oauth2.TokenSource, repositoryPath
 	if err != nil {
 		return nil, fmt.Errorf("could not create a new Container Registry repository: %v", err)
 	}
-	
+
 	auth = google.NewTokenSourceAuthenticator(oauth2Token)
 	opts = google.WithAuth(auth)
 	remoteOpts = append(remoteOpts, remote.WithAuth(auth))
@@ -234,7 +234,7 @@ func discoverImages(images *[]*image) google.WalkFunc {
 				id:          repo.Name(),
 				quickHash:   parts[1],
 				remotePath:  repo.Name(),
-				description: fmt.Sprintf("Tags: %s, Media Type: %s, Created on: %s, Uploaded on: %s", manifest.Tags, manifest.MediaType, manifest.Created.String(), manifest.Uploaded.String()),
+				description: fmt.Sprintf("Tags: %s, Media Type: %s, Created on: %s, Uploaded on: %s", manifest.Tags, manifest.MediaType, manifest.Created.UTC().String(), manifest.Uploaded.UTC().String()),
 			})
 		}
 

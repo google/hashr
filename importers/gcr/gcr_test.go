@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"math/big"
 	"net"
 	"net/http"
@@ -24,6 +23,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/google/go-containerregistry/pkg/v1/google"
@@ -125,7 +125,6 @@ func getTestRepo() (*fakeRepo, []*image, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Println(ha1.Hex)
 
 	image1name := "registry.example.com/test/hashr/aaa"
 	lr1, err := name.ParseReference(image1name)
@@ -144,7 +143,6 @@ func getTestRepo() (*fakeRepo, []*image, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Println(ha2.Hex)
 
 	image2name := "registry.example.com/test/hashr/bbb"
 	lr2, err := name.ParseReference(image2name)
@@ -153,18 +151,17 @@ func getTestRepo() (*fakeRepo, []*image, error) {
 	}
 
 	ref2 := lr2.Context().Tag("bar")
-
 	wantImages := []*image{
 		{
 			id:          image1name,
 			quickHash:   ha1.Hex,
-			description: "Tags: [foo], Media Type: application/vnd.docker.distribution.manifest.v2+json, Created on: 1754-08-30 23:17:49.129 +0034 LMT, Uploaded on: 1754-08-30 23:17:49.129 +0034 LMT",
+			description: "Tags: [foo], Media Type: application/vnd.docker.distribution.manifest.v2+json, Created on: 1754-08-30 22:43:41.129 +0000 UTC, Uploaded on: 1754-08-30 22:43:41.129 +0000 UTC",
 			remotePath:  image1name,
 		},
 		{
 			id:          image2name,
 			quickHash:   ha2.Hex,
-			description: "Tags: [bar], Media Type: application/vnd.docker.distribution.manifest.v2+json, Created on: 1754-08-30 23:17:49.129 +0034 LMT, Uploaded on: 1754-08-30 23:17:49.129 +0034 LMT",
+			description: "Tags: [bar], Media Type: application/vnd.docker.distribution.manifest.v2+json, Created on: 1754-08-30 22:43:41.129 +0000 UTC, Uploaded on: 1754-08-30 22:43:41.129 +0000 UTC",
 			remotePath:  image2name,
 		},
 	}
@@ -215,7 +212,14 @@ func TestDiscoverRepo(t *testing.T) {
 		}
 	}
 
-	if !cmp.Equal(wantImages, gotImages, cmp.AllowUnexported(image{})) {
+	cmpOpts := []cmp.Option{
+		cmp.AllowUnexported(image{}),
+		cmpopts.SortSlices(func(a, b *image) bool {
+			return a.id < b.id
+		}),
+	}
+
+	if !cmp.Equal(wantImages, gotImages, cmpOpts...) {
 		t.Errorf("DiscoverRepo() unexpected diff (-want/+got):\n%s", cmp.Diff(wantImages, gotImages, cmp.AllowUnexported(image{})))
 	}
 }
