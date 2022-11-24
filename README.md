@@ -220,6 +220,16 @@ This is very similar to the TarGz importer except that it looks for `.rpm` packa
 
 1. `-rpm_repo_path` which should point to the path on the local file system that contains `.rpm` files
 
+#### Zip (and )
+
+This is very similar to the TarGz importer except that it looks for `.zip` archives. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+
+1. `-zip_repo_path` which should point to the path on the local file system that contains `.zip` files
+
+Optionally, you can also set the following flag(s):
+
+1. `-zip_file_exts` comma-separated list of file extensions to treat as zip files, eg. "zip,whl,jar". Default: "zip"
+
 #### GCP (Google Cloud Platform)
 
 This importer can extract files from GCP disk [images](https://cloud.google.com/compute/docs/images). This is done in few steps: 
