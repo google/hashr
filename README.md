@@ -10,7 +10,7 @@
   - [Requirements](#requirements)
   - [Building HashR binary and running tests](#building-hashr-binary-and-running-tests)
   - [Setting up HashR](#setting-up-hashr)
-    - [OS configuration & required 3rd party tooling](#os-configuration--required-3rd-party-tooling)
+    - [OS configuration \& required 3rd party tooling](#os-configuration--required-3rd-party-tooling)
     - [Setting up storage for processing tasks](#setting-up-storage-for-processing-tasks)
       - [Setting up PostgreSQL storage](#setting-up-postgresql-storage)
       - [Setting up Cloud Spanner](#setting-up-cloud-spanner)
@@ -18,7 +18,8 @@
       - [TarGz](#targz)
       - [Deb](#deb)
       - [RPM](#rpm)
-      - [GCP](#gcp)
+      - [GCP (Google Cloud Platform)](#gcp-google-cloud-platform)
+      - [GCR (Google Container Registry)](#gcr-google-container-registry)
       - [Windows](#windows)
       - [WSUS](#wsus)
     - [Setting up exporters](#setting-up-exporters)
@@ -161,7 +162,7 @@ gcloud iam service-accounts create hashr --description="HashR SA key." --display
 Create service account key and store in your home directory. Set *<project_name>* to your project name.
 
 ``` shell
-gcloud iam service-accounts keys create ~/hashr-sa-private-key.json --iam-account=hashr@<project_name>.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ~/hashr-sa-private-key.json --iam-account=hashr-sa@<project_name>.iam.gserviceaccount.com
 ```
 
 Point GOOGLE_APPLICATION_CREDENTIALS env variable to your service account key: 
@@ -185,7 +186,7 @@ gcloud spanner databases create hashr --instance=hashr
 Allow the service account to use Spanner database, set *<project_name>* to your project name:
 
 ``` shell
-gcloud spanner databases add-iam-policy-binding hashr --instance hashr --member="serviceAccount:hashr@<project_name>.iam.gserviceaccount.com" --role="roles/spanner.databaseUser" 
+gcloud spanner databases add-iam-policy-binding hashr --instance hashr --member="serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com" --role="roles/spanner.databaseUser" 
 ```
 
 Update Spanner database schema: 
@@ -219,7 +220,7 @@ This is very similar to the TarGz importer except that it looks for `.rpm` packa
 
 1. `-rpm_repo_path` which should point to the path on the local file system that contains `.rpm` files
 
-#### GCP 
+#### GCP (Google Cloud Platform)
 
 This importer can extract files from GCP disk [images](https://cloud.google.com/compute/docs/images). This is done in few steps: 
 
@@ -230,62 +231,62 @@ This importer can extract files from GCP disk [images](https://cloud.google.com/
 1. Copy raw_disk.tar.gz from GCS to local hashR storage
 1. Extract raw_disk.tar.gz and pass the disk image to Plaso 
 
-List of GCP projects containing public GCP images can be found [here](https://cloud.google.com/compute/docs/images/os-details#general-info). In order to use this importer you need to have a GCP project and follow these steps: 
+List of GCP projects containing public GCP images can be found [here](https://cloud.google.com/compute/docs/images/os-details#general-info). In order to use this importer you need to have a GCP project and follow these steps:
 
-Step 1: Create HashR service account, if this was done while setting up Cloud Spanner please go to step 4. 
+Step 1: Create HashR service account, if this was done while setting up Cloud Spanner please go to step 4.
 
 ``` shell
-gcloud iam service-accounts create hashr --description="HashR SA key." --display-name="hashr"
+gcloud iam service-accounts create hashr-sa --description="HashR SA key." --display-name="hashr"
 ```
 
 Step 2: Create service account key and store in your home directory. Make sure to  set *<project_name>* to your project name:
 
 ``` shell
-gcloud iam service-accounts keys create ~/hashr-sa-private-key.json --iam-account=hashr@<project_name>.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ~/hashr-sa-private-key.json --iam-account=hashr-sa@<project_name>.iam.gserviceaccount.com
 ```
 
-Step 3: Point GOOGLE_APPLICATION_CREDENTIALS env variable to your service account key: 
+Step 3: Point GOOGLE_APPLICATION_CREDENTIALS env variable to your service account key:
 
 ``` shell
-export GOOGLE_APPLICATION_CREDENTIALS=/home/hashr/hashr-sa-private-key.json
+export GOOGLE_APPLICATION_CREDENTIALS=~/hashr-sa-private-key.json
 ```
 
-Step 4: Create GCS bucket that will be used to store disk images in .tar.gz format, set *<project_name>* to your project name and  *<gcs_bucket_name>* to your project new GCS bucket name: 
+Step 4: Create GCS bucket that will be used to store disk images in .tar.gz format, set *<project_name>* to your project name and  *<gcs_bucket_name>* to your project new GCS bucket name:
 
 ``` shell
 gsutil mb -p project_name> gs://<gcs_bucket_name>
 ```
 
-Step 5: Make the service account admin of this bucket: 
+Step 5: Make the service account admin of this bucket:
 ``` shell
-gsutil iam ch serviceAccount:hashr@<project_name>.iam.gserviceaccount.com:objectAdmin gs://<gcs_bucket_name>
+gsutil iam ch serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com:objectAdmin gs://<gcs_bucket_name>
 ```
-Step 6: Enable Compute API:  
+Step 6: Enable Compute API:
 ``` shell
 gcloud services enable compute.googleapis.com cloudbuild.googleapis.com
 ```
-Step 7: Create IAM role and assign it required permissions: 
+Step 7: Create IAM role and assign it required permissions:
 ``` shell
 gcloud iam roles create hashr --project=<project_name> --title=hashr --description="Permissions required to run hashR" --permissions compute.images.create compute.images.delete compute.globalOperations.ge
 ```
-Step 8: Bind IAM role to the service account: 
+Step 8: Bind IAM role to the service account:
 ``` shell
-gcloud projects add-iam-policy-binding <project_name> --member="serviceAccount:hashr@<project_name>.iam.gserviceaccount.com" --role="projects/<project_name>/roles/hashr"
+gcloud projects add-iam-policy-binding <project_name> --member="serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com" --role="projects/<project_name>/roles/hashr"
 ```
-Step Grant service accounts access required to run Cloud Build, make sure the change the *<project_name>* and *<project_id>* values: 
+Step Grant service accounts access required to run Cloud Build, make sure the change the *<project_name>* and *<project_id>* values:
 ``` shell
-gcloud projects add-iam-policy-binding <project_name> --member='serviceAccount:hashr@<project_name>.iam.gserviceaccount.com' --role='roles/storage.admin'
+gcloud projects add-iam-policy-binding <project_name> --member='serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com' --role='roles/storage.admin'
 
 gcloud projects add-iam-policy-binding <project_name> \
-  --member='serviceAccount:hashr@<project_name>.iam.gserviceaccount.com' \
+  --member='serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com' \
   --role='roles/viewer'
 
 gcloud projects add-iam-policy-binding <project_name> \
-  --member='serviceAccount:hashr@<project_name>.iam.gserviceaccount.com' \
+  --member='serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com' \
   --role='roles/resourcemanager.projectIamAdmin'
 
 gcloud projects add-iam-policy-binding <project_name> \
-  --member='serviceAccount:hashr@<project_name>.iam.gserviceaccount.com' \
+  --member='serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com' \
   --role='roles/cloudbuild.builds.editor'
 
 
@@ -324,6 +325,37 @@ To use this importer you need to specify the following flag(s):
 1. `-hashrGCPProject` GCP project that will be used to store copy of disk images for processing and also run Cloud Build 
 1. `-hashrGCSBucket` GCS bucket that will be used to store output of Cloud Build (disk images in .tar.gz format)
 
+#### GCR (Google Container Registry) 
+This importer extracts files from container images stored in GCR repositories. In order to set ip up follow these steps: 
+
+Step 1: Create HashR service account, skip to step 4 if this was done while setting up other GCP dependent components.
+
+``` shell
+gcloud iam service-accounts create hashr-sa --description="HashR SA key." --display-name="hashr"
+```
+
+Step 2: Create service account key and store in your home directory. Make sure to  set *<project_name>* to your project name:
+
+``` shell
+gcloud iam service-accounts keys create ~/hashr-sa-private-key.json --iam-account=hashr-sa@<project_name>.iam.gserviceaccount.com
+```
+
+Step 3: Point GOOGLE_APPLICATION_CREDENTIALS env variable to your service account key:
+
+``` shell
+export GOOGLE_APPLICATION_CREDENTIALS=~/hashr-sa-private-key.json
+```
+
+Step 4: Grant hashR service account key required permissions to access given GCR repository. 
+
+``` shell
+gsutil iam ch serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com:objectViewer gs://artifacts.<project_name_hosting_gcr_repo>.appspot.com
+```
+
+To use this importer you need to specify the following flag(s): 
+
+1. `-gcr_repos` which should contain comma separated list of GCR repositories from which you want to import the container images.
+   
 #### Windows 
 
 This importer extracts files from official Windows installation media in ISO-13346 format, e.g. the ones you can download from official Microsoft [website](https://www.microsoft.com/en-gb/software-download/windows10ISO). 
@@ -350,7 +382,7 @@ This importer utilizes 7z to recursively extract contents of Windows Update pack
 ```
 #SQL Query
 $delimiter = ";"
-$SqlQuery = 'select DISTINCT CONVERT([varchar](512), tbfile.FileDigest, 2) as sha1, tbfile.[FileName], vu.[KnowledgebaseArticle], vu.[DefaultTitle]  from [SUSDB].[dbo].[tbFile] tbfile 
+$SqlQuery = 'select DISTINCT CONVERT([varchar](512), tbfile.FileDigest, 2) as sha1, tbfile.[FileName], vu.[KnowledgebaseArticle], vu.[DefaultTitle]  from [SUSDB].[dbo].[tbFile] tbfile
   left join [SUSDB].[dbo].[tbFileForRevision] ffrev
   on tbfile.FileDigest = ffrev.FileDigest
   left join [SUSDB].[dbo].[tbRevision] rev
@@ -358,8 +390,8 @@ $SqlQuery = 'select DISTINCT CONVERT([varchar](512), tbfile.FileDigest, 2) as sh
   left join [SUSDB].[dbo].[tbUpdate] u
   on rev.LocalUpdateID = u.LocalUpdateID
   left join [SUSDB].[PUBLIC_VIEWS].[vUpdate] vu
-  on u.UpdateID = vu.UpdateId'  
-$SqlConnection = New-Object System.Data.SqlClient.SqlConnection  
+  on u.UpdateID = vu.UpdateId'
+$SqlConnection = New-Object System.Data.SqlClient.SqlConnection
 $SqlConnection.ConnectionString = 'server=\\.\pipe\MICROSOFT##WID\tsql\query;database=SUSDB;trusted_connection=true;'
 $SqlCmd = New-Object System.Data.SqlClient.SqlCommand  
 $SqlCmd.CommandText = $SqlQuery  
@@ -411,7 +443,7 @@ gsutil mb -p project_name> gs://<gcs_bucket_name>
 
 Step 2: Make the service account admin of this bucket: 
 ``` shell
-gsutil iam ch serviceAccount:hashr@<project_name>.iam.gserviceaccount.com:objectAdmin gs://<gcs_bucket_name>
+gsutil iam ch serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com:objectAdmin gs://<gcs_bucket_name>
 ```
 
 To use this exporter you need to provide the following flags: `-exporters GCP -gcp_exporter_gcs_bucket <gcs_bucket_name>`
