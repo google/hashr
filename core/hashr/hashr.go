@@ -106,6 +106,7 @@ type HashR struct {
 	wg                     sync.WaitGroup
 	mu                     sync.Mutex
 	processingSources      map[string]*ProcessingSource
+	processingSourcesMutex sync.RWMutex
 }
 
 // ProcessingSource holds data related to a processing source.
@@ -205,7 +206,9 @@ func (h *HashR) process(source Source, processor Processor) (*common.Extraction,
 	extraction := &common.Extraction{SourceID: source.ID(), RepoName: source.RepoName()}
 	extraction.BaseDir, _ = filepath.Split(source.LocalPath())
 	glog.Infof("Done preprocessing %s", source.LocalPath())
+	h.processingSourcesMutex.RLock()
 	h.processingSources[qhash].PreprocessingDuration = time.Since(start)
+	h.processingSourcesMutex.RUnlock()
 	start = time.Now()
 	glog.Infof("Calculating SHA256 of %s", source.LocalPath())
 	extraction.SourceSHA256, err = sha256sum(source.LocalPath())
@@ -219,7 +222,9 @@ func (h *HashR) process(source Source, processor Processor) (*common.Extraction,
 		return extraction, fmt.Errorf("error while processing: %v", err)
 	}
 	glog.Infof("Done processing %s", source.LocalPath())
+	h.processingSourcesMutex.RLock()
 	h.processingSources[qhash].ProcessingDuration = time.Since(start)
+	h.processingSourcesMutex.RUnlock()
 
 	return extraction, nil
 }
@@ -254,6 +259,7 @@ func sha256sum(path string) (string, error) {
 // Run executes main processing loop for hashR.
 func (h *HashR) Run(ctx context.Context) error {
 	h.processingSources = make(map[string]*ProcessingSource)
+	h.processingSourcesMutex = sync.RWMutex{}
 	h.cacheSaveCounter = 0
 
 	for _, importer := range h.Importers {
@@ -302,8 +308,11 @@ func (h *HashR) handleError(ctx context.Context, quickHash, extractionBaseDir st
 	glog.Errorf("%s: skipping source %s: %v", processingSource.Repo, processingSource.ID, err)
 	processingSource.Status = failed
 	processingSource.Error = err.Error()
+	h.processingSourcesMutex.RLock()
 	h.processingSources[quickHash].Error = err.Error()
-	if err := h.Storage.UpdateJobs(ctx, quickHash, h.processingSources[quickHash]); err != nil {
+	processingSource = h.processingSources[quickHash]
+	h.processingSourcesMutex.RUnlock()
+	if err := h.Storage.UpdateJobs(ctx, quickHash, processingSource); err != nil {
 		glog.Errorf("could not update storage: %v", err)
 	}
 
@@ -321,26 +330,38 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 			continue
 		}
 
+		h.processingSourcesMutex.Lock()
 		h.processingSources[qHash] = &ProcessingSource{Repo: source.RepoName(), RepoPath: source.RepoPath(), ID: source.ID(), RemoteSourcePath: source.RemotePath(), ImportedAt: time.Now().Unix(), Status: discovered}
+		processingSource := h.processingSources[qHash]
+		h.processingSourcesMutex.Unlock()
 
-		if err := h.Storage.UpdateJobs(ctx, qHash, h.processingSources[qHash]); err != nil {
+		if err := h.Storage.UpdateJobs(ctx, qHash, processingSource); err != nil {
 			glog.Errorf("could not update storage: %v", err)
 		}
 
+		h.processingSourcesMutex.RLock()
+		processingSource = h.processingSources[qHash]
+		h.processingSourcesMutex.RUnlock()
 		extraction, err := h.process(source, h.Processor)
 		if err != nil {
-			h.handleError(ctx, qHash, extraction.BaseDir, h.processingSources[qHash], err)
+			h.handleError(ctx, qHash, extraction.BaseDir, processingSource, err)
 			continue
 		}
 
+		h.processingSourcesMutex.RLock()
 		h.processingSources[qHash].Sha256 = extraction.SourceSHA256
 		h.processingSources[qHash].Status = processed
-		if err := h.Storage.UpdateJobs(ctx, qHash, h.processingSources[qHash]); err != nil {
+		processingSource = h.processingSources[qHash]
+		h.processingSourcesMutex.RUnlock()
+		if err := h.Storage.UpdateJobs(ctx, qHash, processingSource); err != nil {
 			glog.Errorf("could not update storage: %v", err)
 		}
 
 		glog.Infof("Checking cache for existing samples from %s", source.ID())
 
+		h.processingSourcesMutex.RLock()
+		processingSource = h.processingSources[qHash]
+		h.processingSourcesMutex.RUnlock()
 		samples, err := cache.Check(extraction, c)
 		if err != nil {
 			h.handleError(ctx, qHash, extraction.BaseDir, h.processingSources[qHash], err)
@@ -349,8 +370,11 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 
 		glog.Infof("Done checking cache for existing samples from %s", source.ID())
 
+		h.processingSourcesMutex.RLock()
 		h.processingSources[qHash].Status = cached
-		if err := h.Storage.UpdateJobs(ctx, qHash, h.processingSources[qHash]); err != nil {
+		processingSource = h.processingSources[qHash]
+		h.processingSourcesMutex.RUnlock()
+		if err := h.Storage.UpdateJobs(ctx, qHash, processingSource); err != nil {
 			glog.Errorf("could not update storage: %v", err)
 		}
 
@@ -385,24 +409,35 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 				continue
 			}
 
+			h.processingSourcesMutex.RLock()
 			h.processingSources[qHash].ExportDuration = time.Since(start)
 			h.processingSources[qHash].SampleCount = len(samples)
+			h.processingSourcesMutex.RUnlock()
 			for _, sample := range samples {
 				if sample.Upload {
+					h.processingSourcesMutex.RLock()
 					h.processingSources[qHash].ExportCount++
+					h.processingSourcesMutex.RUnlock()
 				}
 			}
+			
 		} else {
 			err = h.saveSamples(source.RepoName(), extraction.SourceID, extraction.SourceSHA256, samples)
 			if err != nil {
-				h.handleError(ctx, qHash, extraction.BaseDir, h.processingSources[qHash], err)
+				h.processingSourcesMutex.RLock()
+				processingSource := h.processingSources[qHash]
+				h.processingSourcesMutex.RUnlock()
+				h.handleError(ctx, qHash, extraction.BaseDir, processingSource, err)
 				h.mu.Unlock()
 				continue
 			}
 		}
 
+		h.processingSourcesMutex.RLock()
 		h.processingSources[qHash].Status = exported
-		if err := h.Storage.UpdateJobs(ctx, qHash, h.processingSources[qHash]); err != nil {
+		processedSource := h.processingSources[qHash]
+		h.processingSourcesMutex.RUnlock()
+		if err := h.Storage.UpdateJobs(ctx, qHash, processedSource); err != nil {
 			glog.Errorf("could not update storage: %v", err)
 		}
 
