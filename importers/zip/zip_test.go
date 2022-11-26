@@ -36,8 +36,8 @@ func sha256sum(path string) ([32]byte, error) {
 }
 
 func testImages() ([]*Archive, error) {
-	gLinuxRepo := NewRepo("testdata", "zip,jar,whl,egg")
-	gotSources, err := gLinuxRepo.DiscoverRepo()
+	zipRepo := NewRepo("testdata", "zip,jar,whl,egg")
+	gotSources, err := zipRepo.DiscoverRepo()
 	if err != nil {
 		return nil, fmt.Errorf("unexpected error while discovering repo: %v", err)
 	}
@@ -393,9 +393,9 @@ func TestPreprocess(t *testing.T) {
 
 func TestImageFunctions(t *testing.T) {
 	id := "ubuntu-desktop.zip"
-	repoPath := "/tmp/glinux-repo"
-	localzipPath := "/tmp/glinux-repo/20200108.00.00-ubuntu-desktop.zip"
-	remotePath := "/x20/glinux-repo/20200108.00.00-ubuntu-desktop.zip"
+	repoPath := "/tmp/zip-repo"
+	localzipPath := "/tmp/zip-repo/20200108.00.00-ubuntu-desktop.zip"
+	remotePath := "/share/zip-repo/20200108.00.00-ubuntu-desktop.zip"
 
 	img := Archive{filename: id, localPath: localzipPath, remotePath: remotePath, repoPath: repoPath}
 
@@ -421,7 +421,7 @@ func TestImageFunctions(t *testing.T) {
 }
 
 func TestRepoFunctions(t *testing.T) {
-	repoPath := "/tmp/glinux-repo"
+	repoPath := "/tmp/zip-repo"
 	repo := NewRepo(repoPath, "zip,jar,whl,egg")
 
 	if repo.RepoName() != RepoName {

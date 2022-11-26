@@ -237,7 +237,6 @@ func (r *Repo) RepoPath() string {
 
 // DiscoverRepo traverses the repository and looks for files that are related to zip base Archives.
 func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
-
 	if err := filepath.Walk(r.location, walk(&r.files, r.fileExtensions)); err != nil {
 		return nil, err
 	}
