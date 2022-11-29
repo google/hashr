@@ -33,6 +33,7 @@ import (
 	"github.com/google/hashr/importers/targz"
 	"github.com/google/hashr/importers/windows"
 	"github.com/google/hashr/importers/wsus"
+	"github.com/google/hashr/importers/zip"
 	"github.com/google/hashr/processors/local"
 	"github.com/google/hashr/storage/cloudspanner"
 	"github.com/google/hashr/storage/postgres"
@@ -45,7 +46,7 @@ import (
 
 var (
 	processingWorkerCount  = flag.Int("processing_worker_count", 2, "Number of processing workers.")
-	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName, gcr.RepoName))
+	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName, zip.RepoName, gcr.RepoName))
 	exportersToRun         = flag.String("exporters", strings.Join([]string{}, ","), fmt.Sprintf("Exporters to be run: %s,%s", gcpExporter.Name, postgresExporter.Name))
 	jobStorage             = flag.String("storage", "", "Storage that should be used for storing data about processing jobs, can have one of the two values: postgres, cloudspanner")
 	cacheDir               = flag.String("cache_dir", "/tmp/", "Path to cache dir used to store local cache.")
@@ -77,6 +78,9 @@ var (
 	debRepoPath = flag.String("deb_repo_path", "", "Path to Deb repository.")
 	// rpm importer flags
 	rpmRepoPath = flag.String("rpm_repo_path", "", "Path to RPM repository.")
+	// zip importer flags
+	zipRepoPath       = flag.String("zip_repo_path", "", "Path to Zip repository.")
+	zipFileExtensions = flag.String("zip_file_exts", "zip", "Comma-separated list of files to treat as Zip files")
 	// GCR importer flags
 	gcrRepos = flag.String("gcr_repos", "", "Comma separated list of GCR (Google Container Registry) repos.")
 )
@@ -137,6 +141,8 @@ func main() {
 			importers = append(importers, deb.NewRepo(*debRepoPath))
 		case rpm.RepoName:
 			importers = append(importers, rpm.NewRepo(*rpmRepoPath))
+		case zip.RepoName:
+			importers = append(importers, zip.NewRepo(*zipRepoPath, *zipFileExtensions))
 		case gcr.RepoName:
 			tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
 			if err != nil {
