@@ -102,7 +102,10 @@ func extractTar(tarfile *tar.Reader, outputFolder string) error {
 				return fmt.Errorf("error while creating destination file: %v", err)
 			}
 			defer unpackFileHandle.Close()
-			io.Copy(unpackFileHandle, tarfile)
+			_, err = io.Copy(unpackFileHandle, tarfile)
+			if err != nil {
+				return fmt.Errorf("error while writing to destination file: %v", err)
+			}
 
 		default:
 			fmt.Printf("Unknown tar entry type: %c in file %s\n", header.Typeflag, name)

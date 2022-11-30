@@ -321,7 +321,7 @@ func (h *HashR) handleError(ctx context.Context, quickHash, extractionBaseDir st
 	}
 }
 
-func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, c *sync.Map) error {
+func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, c *sync.Map) {
 	defer h.wg.Done()
 	for source := range newSources {
 		qHash, err := source.QuickSHA256Hash()
@@ -364,7 +364,7 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 		h.processingSourcesMutex.RUnlock()
 		samples, err := cache.Check(extraction, c)
 		if err != nil {
-			h.handleError(ctx, qHash, extraction.BaseDir, h.processingSources[qHash], err)
+			h.handleError(ctx, qHash, extraction.BaseDir, processingSource, err)
 			continue
 		}
 
@@ -420,7 +420,7 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 					h.processingSourcesMutex.RUnlock()
 				}
 			}
-			
+
 		} else {
 			err = h.saveSamples(source.RepoName(), extraction.SourceID, extraction.SourceSHA256, samples)
 			if err != nil {
@@ -448,8 +448,6 @@ func (h *HashR) processingWorker(ctx context.Context, newSources <-chan Source, 
 		h.mu.Unlock()
 		h.cacheSaveCounter++
 	}
-
-	return nil
 }
 
 func (h *HashR) saveSamples(sourceImporter, sourceID, sourceHash string, samples []common.Sample) error {

@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package windows implements Windows ISO-13346 repository importer.
-package windows
+package template
 
 import (
 	"context"

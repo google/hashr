@@ -9,6 +9,7 @@ import (
 	"github.com/google/hashr/common"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -58,7 +59,7 @@ func TestExport(t *testing.T) {
 	o := []option.ClientOption{
 		option.WithEndpoint("localhost:9010"),
 		option.WithoutAuthentication(),
-		option.WithGRPCDialOption(grpc.WithInsecure()),
+		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}
 
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx, o...)

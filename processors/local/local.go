@@ -158,7 +158,7 @@ func xfsVolumes(imagePath string, volumes []volume) ([]volume, error) {
 			continue
 		}
 		// Check if first 4 bytes of the volume matches XFS signature.
-		if bytes.Compare(data, []byte{88, 70, 83, 66}) == 0 {
+		if bytes.Equal(data, []byte{88, 70, 83, 66}) {
 			xfsPartitions = append(xfsPartitions, volume)
 		}
 	}
