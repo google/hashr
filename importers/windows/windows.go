@@ -117,10 +117,8 @@ func extractWimFolder(wimFile *wim.File, path, extractionDir string) error {
 				glog.Errorf("Could not create destination directory %s: %v", dstPath, err)
 				continue
 			}
-			err = extractWimFolder(file, filepath.Join(path, file.Name), extractionDir)
-			if err != nil {
-				glog.Errorf("Failed to extract Wim folder %s: %v", file.Name, err)
-				continue
+			if err := extractWimFolder(file, filepath.Join(path, file.Name), extractionDir); err != nil {
+				glog.Warningf("Failed to extract Wim folder %s: %v", file.Name, err)
 			}
 		} else {
 			if err := copyFile(file, dstPath); err != nil {
