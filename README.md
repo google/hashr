@@ -15,14 +15,14 @@
       - [Setting up PostgreSQL storage](#setting-up-postgresql-storage)
       - [Setting up Cloud Spanner](#setting-up-cloud-spanner)
     - [Setting up importers](#setting-up-importers)
-      - [TarGz](#targz)
-      - [Deb](#deb)
-      - [RPM](#rpm)
-      - [Zip (and other zip-like formats)](#zip-and-other-zip-like-formats)
       - [GCP (Google Cloud Platform)](#gcp-google-cloud-platform)
       - [GCR (Google Container Registry)](#gcr-google-container-registry)
       - [Windows](#windows)
       - [WSUS](#wsus)
+      - [TarGz](#targz)
+      - [Deb](#deb)
+      - [RPM](#rpm)
+      - [Zip (and other zip-like formats)](#zip-and-other-zip-like-formats)
     - [Setting up exporters](#setting-up-exporters)
       - [Setting up Postgres exporter](#setting-up-postgres-exporter)
       - [Setting up GCP exporter](#setting-up-gcp-exporter)
@@ -195,36 +195,7 @@ In order to use Cloud Spanner to store information about processing tasks you ne
 
 ### Setting up importers 
 
-In order to specify which importer you want to run you should use the `-importers` flag. Possible values: `GCP,targz,windows,wsus`
-
-
-#### TarGz 
-
-This is a simple importer that traverses repositories and looks for `.tar.gz` files. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
-
-1. `-targz_repo_path` which should point to the path on the local file system that contains `.tar.gz` files
-
-#### Deb 
-
-This is very similar to the TarGz importer except that it looks for `.deb` packages. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
-
-1. `-deb_repo_path` which should point to the path on the local file system that contains `.deb` files
-
-#### RPM
-
-This is very similar to the TarGz importer except that it looks for `.rpm` packages. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
-
-1. `-rpm_repo_path` which should point to the path on the local file system that contains `.rpm` files
-
-#### Zip (and other zip-like formats)
-
-This is very similar to the TarGz importer except that it looks for `.zip` archives. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
-
-1. `-zip_repo_path` which should point to the path on the local file system that contains `.zip` files
-
-Optionally, you can also set the following flag(s):
-
-1. `-zip_file_exts` comma-separated list of file extensions to treat as zip files, eg. "zip,whl,jar". Default: "zip"
+In order to specify which importer you want to run you should use the `-importers` flag. Possible values: `GCP,targz,windows,wsus,deb,rpm,zip,gcr`
 
 #### GCP (Google Cloud Platform)
 
@@ -414,6 +385,34 @@ gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/
 ```
 
 This will dump the relevant information from WSUS DB, store it in the `export.csv` file and sync the contents of the WSUS folder with GCS bucket. WSUS importer will check if `export.csv` file is present in the root of the WSUS repo, if so it will use it. 
+
+#### TarGz 
+
+This is a simple importer that traverses repositories and looks for `.tar.gz` files. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+
+1. `-targz_repo_path` which should point to the path on the local file system that contains `.tar.gz` files
+
+#### Deb 
+
+This is very similar to the TarGz importer except that it looks for `.deb` packages. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+
+1. `-deb_repo_path` which should point to the path on the local file system that contains `.deb` files
+
+#### RPM
+
+This is very similar to the TarGz importer except that it looks for `.rpm` packages. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+
+1. `-rpm_repo_path` which should point to the path on the local file system that contains `.rpm` files
+
+#### Zip (and other zip-like formats)
+
+This is very similar to the TarGz importer except that it looks for `.zip` archives. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+
+1. `-zip_repo_path` which should point to the path on the local file system that contains `.zip` files
+
+Optionally, you can also set the following flag(s):
+
+1. `-zip_file_exts` comma-separated list of file extensions to treat as zip files, eg. "zip,whl,jar". Default: "zip"
 
 ### Setting up exporters 
 
