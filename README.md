@@ -18,6 +18,7 @@
       - [TarGz](#targz)
       - [Deb](#deb)
       - [RPM](#rpm)
+      - [Zip (and other zip-like formats)](#zip-and-other-zip-like-formats)
       - [GCP (Google Cloud Platform)](#gcp-google-cloud-platform)
       - [GCR (Google Container Registry)](#gcr-google-container-registry)
       - [Windows](#windows)
@@ -92,15 +93,10 @@ HashR takes care of the heavy lifting (parsing disk images, volumes, file system
 docker pull log2timeline/plaso
 ```
 
-We also need two additional tools installed on the machine running HashR:
-
-1. mmls, which is part of Sleuthkit, to list volumes on disk image 
-1. 7z, which is used by WSUS importer for recursive extraction in Windows Update packages 
-
-You can install both with the following command: 
+We also need 7z, which is used by WSUS importer for recursive extraction of Windows Update packages, to be installed on the machine running HashR:
 
 ``` shell
-sudo apt install p7zip-full sleuthkit
+sudo apt install p7zip-full 
 ```
 
 You need to allow the user, under which HashR will run, to run certain commands via sudo. Assuming that your user is `hashr` create a file `/etc/sudoers.d/hashr` and put in: 
