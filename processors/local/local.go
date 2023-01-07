@@ -71,7 +71,7 @@ func (p *Processor) ImageExport(sourcePath string) (string, error) {
 	exportDir := filepath.Join(baseDir, "export")
 	logFile := filepath.Join(baseDir, "image_export.log")
 
-	args := []string{"run", "-v", "/tmp/:/tmp", "log2timeline/plaso", "image_export", "--logfile", logFile, "--partitions", "all", "--volumes", "all", "-w", exportDir, sourcePath}
+	args := []string{"run", "--rm", "-v", "/tmp/:/tmp", "log2timeline/plaso", "image_export", "--logfile", logFile, "--partitions", "all", "--volumes", "all", "-w", exportDir, sourcePath}
 	_, err := shellCommand("docker", args...)
 	if err != nil {
 		return "", fmt.Errorf("error while running Plaso: %v", err)
