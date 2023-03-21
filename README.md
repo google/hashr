@@ -40,10 +40,14 @@ HashR consists of the following components:
 
 Currently implemented importers: 
 
-1. TarGz, which extracts files from .tar.gz archives. 
 1. GCP, which extracts file from base GCP disk [images](https://cloud.google.com/compute/docs/images)
 1. Windows, which extracts files from Windows installation media in ISO-13346 format. 
-1. WSUS, which extracts files from Windows Update packages.  
+1. WSUS, which extracts files from Windows Update packages.
+1. GCR, which extracts file from container images stored in Google Container Registry.
+1. TarGz, which extracts files from .tar.gz archives. 
+1. Deb, which extracts files Debian software packages.
+1. RPM, which extracts files from RPM software packages.
+1. Zip, which extracts files from .zip (and zip-like) archives. 
 
 Once files are extracted and hashed results will be passed to the exporters, currently implemented exporters:
 
