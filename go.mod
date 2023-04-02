@@ -9,6 +9,7 @@ require (
 	github.com/golang/glog v1.0.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-containerregistry v0.12.1
+	github.com/hooklift/iso9660 v1.0.0
 	github.com/lib/pq v1.10.6
 	github.com/sassoftware/go-rpmutils v0.2.0
 	golang.org/x/oauth2 v0.1.0
@@ -23,6 +24,7 @@ require (
 	cloud.google.com/go v0.102.1 // indirect
 	cloud.google.com/go/compute v1.10.0 // indirect
 	github.com/DataDog/zstd v1.4.8 // indirect
+	github.com/c4milo/gotoolkit v0.0.0-20190525173301-67483a18c17a // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect

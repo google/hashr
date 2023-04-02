@@ -23,6 +23,7 @@
       - [Deb](#deb)
       - [RPM](#rpm)
       - [Zip (and other zip-like formats)](#zip-and-other-zip-like-formats)
+      - [ISO 9660](#iso-9660)
     - [Setting up exporters](#setting-up-exporters)
       - [Setting up Postgres exporter](#setting-up-postgres-exporter)
       - [Setting up GCP exporter](#setting-up-gcp-exporter)
@@ -199,7 +200,7 @@ In order to use Cloud Spanner to store information about processing tasks you ne
 
 ### Setting up importers 
 
-In order to specify which importer you want to run you should use the `-importers` flag. Possible values: `GCP,targz,windows,wsus,deb,rpm,zip,gcr`
+In order to specify which importer you want to run you should use the `-importers` flag. Possible values: `GCP,targz,windows,wsus,deb,rpm,zip,gcr,iso`
 
 #### GCP (Google Cloud Platform)
 
@@ -417,6 +418,12 @@ This is very similar to the TarGz importer except that it looks for `.zip` archi
 Optionally, you can also set the following flag(s):
 
 1. `-zip_file_exts` comma-separated list of file extensions to treat as zip files, eg. "zip,whl,jar". Default: "zip"
+
+#### ISO 9660
+
+This is very similar to the TarGz importer except that it looks for `.iso` file. Once found it will hash the first and the last 10MB of the file to check if it was already processed. This is done to prevent hashing the whole file every time the repository is scanned for new sources. To use this importer you need to specify the following flag(s): 
+
+1. `-iso_repo_path` which should point to the path on the local file system that contains `.iso` files
 
 ### Setting up exporters 
 

@@ -29,6 +29,7 @@ import (
 	"github.com/google/hashr/importers/deb"
 	"github.com/google/hashr/importers/gcp"
 	"github.com/google/hashr/importers/gcr"
+	"github.com/google/hashr/importers/iso9660"
 	"github.com/google/hashr/importers/rpm"
 	"github.com/google/hashr/importers/targz"
 	"github.com/google/hashr/importers/windows"
@@ -46,7 +47,7 @@ import (
 
 var (
 	processingWorkerCount  = flag.Int("processing_worker_count", 2, "Number of processing workers.")
-	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName, zip.RepoName, gcr.RepoName))
+	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName, zip.RepoName, gcr.RepoName, iso9660.RepoName))
 	exportersToRun         = flag.String("exporters", strings.Join([]string{}, ","), fmt.Sprintf("Exporters to be run: %s,%s", gcpExporter.Name, postgresExporter.Name))
 	jobStorage             = flag.String("storage", "", "Storage that should be used for storing data about processing jobs, can have one of the two values: postgres, cloudspanner")
 	cacheDir               = flag.String("cache_dir", "/tmp/", "Path to cache dir used to store local cache.")
@@ -83,6 +84,8 @@ var (
 	zipFileExtensions = flag.String("zip_file_exts", "zip", "Comma-separated list of files to treat as Zip files")
 	// GCR importer flags
 	gcrRepos = flag.String("gcr_repos", "", "Comma separated list of GCR (Google Container Registry) repos.")
+	// iso importer flags
+	isoRepoPath = flag.String("iso_repo_path", "", "Path to ISO9660 repository.")
 )
 
 func main() {
@@ -137,6 +140,8 @@ func main() {
 			}
 		case targz.RepoName:
 			importers = append(importers, targz.NewRepo(*tarGzRepoPath))
+		case iso9660.RepoName:
+			importers = append(importers, iso9660.NewRepo(*isoRepoPath))
 		case deb.RepoName:
 			importers = append(importers, deb.NewRepo(*debRepoPath))
 		case rpm.RepoName:
