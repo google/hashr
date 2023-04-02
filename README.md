@@ -200,7 +200,7 @@ In order to use Cloud Spanner to store information about processing tasks you ne
 
 ### Setting up importers 
 
-In order to specify which importer you want to run you should use the `-importers` flag. Possible values: `GCP,targz,windows,wsus,deb,rpm,zip,gcr,iso`
+In order to specify which importer you want to run you should use the `-importers` flag. Possible values: `GCP,targz,windows,wsus,deb,rpm,zip,gcr,iso9660`
 
 #### GCP (Google Cloud Platform)
 
