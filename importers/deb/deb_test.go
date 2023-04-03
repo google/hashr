@@ -175,7 +175,6 @@ func TestPreprocess(t *testing.T) {
 
 	for _, image := range images {
 		extractionDir, err := image.Preprocess()
-		fmt.Printf("testfile: %v\n", image.localPath)
 		if err != nil {
 			t.Fatalf("unexpected Preprocess() error: %v", err)
 		}
