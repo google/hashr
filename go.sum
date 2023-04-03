@@ -745,8 +745,8 @@ honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.1-2019.2.3/go.mod h1:a3bituU0lyd329TUQxRnasdCoJDkEUEAqEt0JzvZhAg=
 honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
-pault.ag/go/debian v0.12.0 h1:b8ctSdBSGJ98NE1VLn06aSx70EUpczlP2qqSHEiYYJA=
-pault.ag/go/debian v0.12.0/go.mod h1:UbnMr3z/KZepjq7VzbYgBEfz8j4+Pyrm2L5X1fzhy/k=
+pault.ag/go/debian v0.12.1-0.20221005163303-f50faa5a0bdf h1:kvMXcvFkwyv9AjTb0algRDstix24+l2cQhalnaijeA4=
+pault.ag/go/debian v0.12.1-0.20221005163303-f50faa5a0bdf/go.mod h1:mLGXvkSUptUk8qv2gNrQ1vyqxTcWKn9UzbheKNEcKho=
 pault.ag/go/topsort v0.0.0-20160530003732-f98d2ad46e1a h1:WwS7vlB5H2AtwKj1jsGwp2ZLud1x6WXRXh2fXsRqrcA=
 pault.ag/go/topsort v0.0.0-20160530003732-f98d2ad46e1a/go.mod h1:INqx0ClF7kmPAMk2zVTX8DRnhZ/yaA/Mg52g8KFKE7k=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
