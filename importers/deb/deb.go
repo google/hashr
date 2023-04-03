@@ -133,21 +133,9 @@ func extractDeb(debPath, outputFolder string) error {
 		return fmt.Errorf("failed to parse deb file: %v", err)
 	}
 
-	for _, arEntry := range debFile.ArContent {
-		if !arEntry.IsTarfile() {
-			continue
-		}
-
-		tarfile, closer, err := arEntry.Tarfile()
-		if err != nil {
-			return fmt.Errorf("error while opening tar archive in deb package: %v", err)
-		}
-		defer closer.Close()
-
-		err = extractTar(tarfile, outputFolder)
-		if err != nil {
-			return err
-		}
+	err = extractTar(debFile.Data, outputFolder)
+	if err != nil {
+		return err
 	}
 
 	return nil
