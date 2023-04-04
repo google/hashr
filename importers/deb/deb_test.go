@@ -141,18 +141,18 @@ func TestQuickHash(t *testing.T) {
 	}
 
 	wantHashes := map[string]string{
-		"testdata/20200106.00.00/ubuntu-desktop.deb": "46f4195eeee153f88d0661b8c4f2ae3b943548f1614ee608235cfdf734f16cc9",
-		"testdata/20200106.00.00/ubuntu-laptop.deb":  "6671cc69fe1ab79b8522eb099b101adaf508395fab92d1c214044439e5d80596",
-		"testdata/20200106.00.00/ubuntu-server.deb":  "1c210dd489e1246bc49d7a07a8d018d17846db22df721b7513c2928197649508",
-		"testdata/20200107.00.00/ubuntu-desktop.deb": "89e8e73527902f4fc727f543ba84dfaf174b27a1c2e691ed0bafc8d82a98874f",
-		"testdata/20200107.00.00/ubuntu-laptop.deb":  "103cf8ee8b8b69b853cbe5d56eeb302ee555f8f837961fbb1935f513bd0374f0",
-		"testdata/20200107.00.00/ubuntu-server.deb":  "25944c55094296c94ce3bd41d49b3db50737ecba3f6ab7d66081eb1ed492fa60",
-		"testdata/20200107.01.00/ubuntu-desktop.deb": "e5dfde39622e00d96c420f15625ebbb1263d3a6b7b2945675a1e1d86ebb93ad0",
-		"testdata/20200107.01.00/ubuntu-laptop.deb":  "6a37c9a763dcc3952d4040cde74dea9dd98cc13290b4a22a9f35504be440de19",
-		"testdata/20200107.01.00/ubuntu-server.deb":  "1b470be71f59a8f384dcb5c35232d20e41747af8c378c9f34d792c8741c8c71f",
-		"testdata/20200108.00.00/ubuntu-desktop.deb": "3371e25c4100130aade6d588f2b6af05f4b23f846d4977c3ea6f18f0d84e266f",
-		"testdata/20200108.00.00/ubuntu-laptop.deb":  "c4ecda41be40868c172272fde62ab7c8408e401bcaa38aafe6a88340478bf052",
-		"testdata/20200108.00.00/ubuntu-server.deb":  "94172f23e70c763949202b9df36d22c503319f70719f787460f70e4b5d6ad355",
+		"testdata/20200106.00.00/ubuntu-laptop.deb":  "a61904b9f97e6eef41586f416657045dcd4141d751600cc89e135103279e77a1",
+		"testdata/20200106.00.00/ubuntu-desktop.deb": "8706395a86cdf7e77b433c5a2cba3d096da0a0b86d3fe79e0ac167a31062d658",
+		"testdata/20200106.00.00/ubuntu-server.deb":  "9495efbfca5aea3c1fbde35373159623592ab8f60591f7ad73f65f83b49a37e8",
+		"testdata/20200107.01.00/ubuntu-laptop.deb":  "e7d97cb016bd39b988b1e44465186c362a2bea63078e50b7968e87d495499974",
+		"testdata/20200107.01.00/ubuntu-desktop.deb": "9146742d47b5143a1882749b5458fb6b8fb6cb2ae20429463c4434e33c8744d5",
+		"testdata/20200107.01.00/ubuntu-server.deb":  "323a83ac264cf23e96bf56242ccd3c25f78e5eddd74ca8b935ee34c5e954b0d5",
+		"testdata/20200108.00.00/ubuntu-laptop.deb":  "6834a6e7c71e7073df814101f6d49f6595f8ebd5db1729adbb2731d5a9f4047a",
+		"testdata/20200108.00.00/ubuntu-desktop.deb": "54ffdfaab45c1c3bb70dff41ce0e3412625c7417cff617320552c7fd6bd6fbdf",
+		"testdata/20200108.00.00/ubuntu-server.deb":  "911b33a37942821dfdc17983ce9c9f59076ac7f71126d59bc7b367ec883cccf1",
+		"testdata/20200107.00.00/ubuntu-laptop.deb":  "f15b61edab68b092001484c8f55872c88b4ee8a0888e5307a6fe1b04e8e7bfd5",
+		"testdata/20200107.00.00/ubuntu-desktop.deb": "35a1c9bb833f9af4be0d57dd0799ba85ec4508b69e3e991b35cb8dc362c4ac43",
+		"testdata/20200107.00.00/ubuntu-server.deb":  "4f42391fae4724462f9192b44018fc9661c31e81b912fbdef5dd2c2c7dfc55ce",
 	}
 
 	if !cmp.Equal(wantHashes, gotHashes) {

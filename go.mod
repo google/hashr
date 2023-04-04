@@ -16,7 +16,7 @@ require (
 	google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.1
-	pault.ag/go/debian v0.12.0
+	pault.ag/go/debian v0.12.1-0.20221005163303-f50faa5a0bdf
 )
 
 require (
