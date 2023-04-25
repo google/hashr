@@ -39,7 +39,7 @@ import (
 const (
 	// RepoName contains the repository name.
 	RepoName     = "GCP"
-	buildTimeout = "3600s"
+	buildTimeout = "21600s"
 )
 
 var (
