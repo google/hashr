@@ -35,16 +35,16 @@ func sha256sum(path string) ([32]byte, error) {
 	return sha256.Sum256(data), nil
 }
 
-func testImages() ([]*Archive, error) {
+func testImages() ([]*ISO9660, error) {
 	isoRepo := NewRepo("testdata")
 	gotSources, err := isoRepo.DiscoverRepo()
 	if err != nil {
 		return nil, fmt.Errorf("unexpected error while discovering repo: %v", err)
 	}
 
-	images := []*Archive{}
+	images := []*ISO9660{}
 	for _, source := range gotSources {
-		if image, ok := source.(*Archive); ok {
+		if image, ok := source.(*ISO9660); ok {
 			images = append(images, image)
 		} else {
 			return nil, errors.New("error while casting Source interface to Image struct")
@@ -60,7 +60,7 @@ func TestDiscover(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantImages := []*Archive{
+	wantImages := []*ISO9660{
 		{
 			filename:   "ubuntu-desktop.iso",
 			remotePath: "testdata/20200106.00.00/ubuntu-desktop.iso",
@@ -123,8 +123,8 @@ func TestDiscover(t *testing.T) {
 		},
 	}
 
-	if !cmp.Equal(wantImages, gotImages, cmp.AllowUnexported(Archive{})) {
-		t.Errorf("Discovery() unexpected diff (-want/+got):\n%s", cmp.Diff(wantImages, gotImages, cmp.AllowUnexported(Archive{})))
+	if !cmp.Equal(wantImages, gotImages, cmp.AllowUnexported(ISO9660{})) {
+		t.Errorf("Discovery() unexpected diff (-want/+got):\n%s", cmp.Diff(wantImages, gotImages, cmp.AllowUnexported(ISO9660{})))
 	}
 }
 
@@ -397,7 +397,7 @@ func TestImageFunctions(t *testing.T) {
 	localisoPath := "/tmp/iso-repo/20200108.00.00-ubuntu-desktop.iso"
 	remotePath := "/share/iso-repo/20200108.00.00-ubuntu-desktop.iso"
 
-	img := Archive{filename: id, localPath: localisoPath, remotePath: remotePath, repoPath: repoPath}
+	img := ISO9660{filename: id, localPath: localisoPath, remotePath: remotePath, repoPath: repoPath}
 
 	if img.ID() != id {
 		t.Errorf("ID() = %s; want = %s", img.ID(), id)

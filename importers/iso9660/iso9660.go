@@ -38,8 +38,8 @@ const (
 	chunkSize = 1024 * 1024 * 10 // 10MB
 )
 
-// Archive holds data related to zip archive.
-type Archive struct {
+// Archive holds data related to the ISO file.
+type ISO9660 struct {
 	filename        string
 	remotePath      string
 	localPath       string
@@ -48,7 +48,7 @@ type Archive struct {
 }
 
 // Preprocess extracts the contents of a .tar.gz file.
-func (a *Archive) Preprocess() (string, error) {
+func (a *ISO9660) Preprocess() (string, error) {
 	var err error
 	a.localPath, err = common.CopyToLocal(a.remotePath, a.ID())
 	if err != nil {
@@ -58,14 +58,14 @@ func (a *Archive) Preprocess() (string, error) {
 	baseDir, _ := filepath.Split(a.localPath)
 	extractionDir := filepath.Join(baseDir, "extracted")
 
-	if err := extractZip(a.localPath, extractionDir); err != nil {
+	if err := extractIso(a.localPath, extractionDir); err != nil {
 		return "", err
 	}
 
 	return extractionDir, nil
 }
 
-func extractZip(zipPath, outputFolder string) error {
+func extractIso(isoPath, outputFolder string) error {
 	if _, err := os.Stat(outputFolder); os.IsNotExist(err) {
 		if err2 := os.MkdirAll(outputFolder, 0755); err2 != nil {
 			return fmt.Errorf("error while creating target directory: %v", err2)
@@ -73,7 +73,7 @@ func extractZip(zipPath, outputFolder string) error {
 	}
 
 	// Step 1: Open ISO reader
-	file, err := os.Open(zipPath)
+	file, err := os.Open(isoPath)
 	if err != nil {
 		return fmt.Errorf("error opening ISO file: %v", err)
 	}
@@ -100,7 +100,7 @@ func extractZip(zipPath, outputFolder string) error {
 			return fmt.Errorf("error retrieving next file from ISO: %v", err)
 		}
 
-		err = unzipFile(f, outputFolder)
+		err = unpackFile(f, outputFolder)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func extractZip(zipPath, outputFolder string) error {
 	return nil
 }
 
-func unzipFile(f fs.FileInfo, destination string) error {
+func unpackFile(f fs.FileInfo, destination string) error {
 	// Step 4: Create output path
 	fp := filepath.Join(destination, f.Name())
 	if f.IsDir() {
@@ -147,38 +147,38 @@ func unzipFile(f fs.FileInfo, destination string) error {
 	return nil
 }
 
-// ID returns non-unique zip Archive ID.
-func (a *Archive) ID() string {
+// ID returns non-unique ISO file Archive ID.
+func (a *ISO9660) ID() string {
 	return a.filename
 }
 
 // RepoName returns repository name.
-func (a *Archive) RepoName() string {
+func (a *ISO9660) RepoName() string {
 	return RepoName
 }
 
 // RepoPath returns repository path.
-func (a *Archive) RepoPath() string {
+func (a *ISO9660) RepoPath() string {
 	return a.repoPath
 }
 
-// LocalPath returns local path to a zip Archive .tar.gz file.
-func (a *Archive) LocalPath() string {
+// LocalPath returns local path to a ISO file Archive .iso file.
+func (a *ISO9660) LocalPath() string {
 	return a.localPath
 }
 
-// RemotePath returns non-local path to a zip Archive .tar.gz file.
-func (a *Archive) RemotePath() string {
+// RemotePath returns non-local path to a ISO file Archive .iso file.
+func (a *ISO9660) RemotePath() string {
 	return a.remotePath
 }
 
-// Description provides additional description for a .tar.gz file.
-func (a *Archive) Description() string {
+// Description provides additional description for a .iso file.
+func (a *ISO9660) Description() string {
 	return ""
 }
 
-// QuickSHA256Hash calculates sha256 hash of .tar.gz file.
-func (a *Archive) QuickSHA256Hash() (string, error) {
+// QuickSHA256Hash calculates sha256 hash of .iso file.
+func (a *ISO9660) QuickSHA256Hash() (string, error) {
 	// Check if the quick hash was already calculated.
 	if a.quickSha256hash != "" {
 		return a.quickSha256hash, nil
@@ -221,16 +221,16 @@ func (a *Archive) QuickSHA256Hash() (string, error) {
 	return a.quickSha256hash, nil
 }
 
-// NewRepo returns new instance of zip repository.
+// NewRepo returns new instance of an ISO file repository.
 func NewRepo(path string) *Repo {
 	return &Repo{location: path}
 }
 
-// Repo holds data related to a zip repository.
+// Repo holds data related to an ISO file repository.
 type Repo struct {
 	location string
 	files    []string
-	Archives []*Archive
+	Archives []*ISO9660
 }
 
 // RepoName returns repository name.
@@ -243,7 +243,7 @@ func (r *Repo) RepoPath() string {
 	return r.location
 }
 
-// DiscoverRepo traverses the repository and looks for files that are related to zip base Archives.
+// DiscoverRepo traverses the repository and looks for files that are related to ISO file base Archives.
 func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 	if err := filepath.Walk(r.location, walk(&r.files)); err != nil {
 		return nil, err
@@ -252,7 +252,7 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 	for _, file := range r.files {
 		_, filename := filepath.Split(file)
 
-		r.Archives = append(r.Archives, &Archive{filename: filename, remotePath: file, repoPath: r.location})
+		r.Archives = append(r.Archives, &ISO9660{filename: filename, remotePath: file, repoPath: r.location})
 	}
 
 	var sources []hashr.Source
