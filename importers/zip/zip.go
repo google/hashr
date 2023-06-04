@@ -45,7 +45,7 @@ type Archive struct {
 	repoPath        string
 }
 
-// Preprocess extracts the contents of a .tar.gz file.
+// Preprocess extracts the contents of a .zip file.
 func (a *Archive) Preprocess() (string, error) {
 	var err error
 	a.localPath, err = common.CopyToLocal(a.remotePath, a.ID())
@@ -148,22 +148,22 @@ func (a *Archive) RepoPath() string {
 	return a.repoPath
 }
 
-// LocalPath returns local path to a zip Archive .tar.gz file.
+// LocalPath returns local path to a zip Archive .zip file.
 func (a *Archive) LocalPath() string {
 	return a.localPath
 }
 
-// RemotePath returns non-local path to a zip Archive .tar.gz file.
+// RemotePath returns non-local path to a zip Archive .zip file.
 func (a *Archive) RemotePath() string {
 	return a.remotePath
 }
 
-// Description provides additional description for a .tar.gz file.
+// Description provides additional description for a .zip file.
 func (a *Archive) Description() string {
 	return ""
 }
 
-// QuickSHA256Hash calculates sha256 hash of .tar.gz file.
+// QuickSHA256Hash calculates sha256 hash of .zip file.
 func (a *Archive) QuickSHA256Hash() (string, error) {
 	// Check if the quick hash was already calculated.
 	if a.quickSha256hash != "" {
