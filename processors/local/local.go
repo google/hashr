@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 
 	"github.com/golang/glog"
 )
@@ -30,20 +29,9 @@ var execute = func(name string, args ...string) *exec.Cmd {
 	return exec.Command(name, args...)
 }
 
-type volume struct {
-	id     int
-	start  int
-	length int
-}
-
 // Processor is an instance of local processor.
 type Processor struct {
 }
-
-var (
-	reRow   = regexp.MustCompile(`(?m)^\d{3}:.*`)
-	reSpace = regexp.MustCompile(`\s+`)
-)
 
 // New returns new local processor instance.
 func New() *Processor {
@@ -71,11 +59,24 @@ func (p *Processor) ImageExport(sourcePath string) (string, error) {
 	exportDir := filepath.Join(baseDir, "export")
 	logFile := filepath.Join(baseDir, "image_export.log")
 
-	args := []string{"run", "--rm", "-v", "/tmp/:/tmp", "log2timeline/plaso", "image_export", "--logfile", logFile, "--partitions", "all", "--volumes", "all", "-w", exportDir, sourcePath}
-	_, err := shellCommand("docker", args...)
+	dockerArgs := []string{"run", "--rm", "-v", "/tmp/:/tmp", "log2timeline/plaso", "image_export", "--logfile", logFile, "--partitions", "all", "--volumes", "all", "-w", exportDir, sourcePath}
+	localArgs := []string{"--logfile", logFile, "--partitions", "all", "--volumes", "all", "-w", exportDir, sourcePath}
+	var err error
+
+	if inDockerContainer() {
+		_, err = shellCommand("image_export.py", localArgs...)
+	} else {
+		_, err = shellCommand("docker", dockerArgs...)
+	}
+
 	if err != nil {
-		return "", fmt.Errorf("error while running Plaso: %v", err)
+		return "", fmt.Errorf("error while running image_export: %v", err)
 	}
 
 	return exportDir, nil
+}
+
+func inDockerContainer() bool {
+	_, err := shellCommand("ls", "/.dockerenv")
+	return err == nil
 }
