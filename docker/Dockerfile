@@ -1,12 +1,21 @@
+# Use: docker build --no-cache --build-arg PPA_TRACK="[staging|stable]"
+
+# Stage 0 - hashr-builder
+FROM golang:alpine AS hashr-builder
+RUN apk add --no-cache  build-base
+
+# Compile hashr statically
+RUN mkdir -p /opt/hashr/
+COPY . /opt/hashr/
+RUN cd /opt/hashr/ && GOOS=linux GOARCH=amd64 go build -v -ldflags="-linkmode=external -extldflags=-static" -tags osusergo,netgo -o hashr hashr.go
+
+# Stage 1 - hashr
 FROM ubuntu:22.04
 
-# Use: docker build --no-cache --build-arg PPA_TRACK="[staging|stable]"
 ARG PPA_TRACK=stable
-
 ENV DEBIAN_FRONTEND=noninteractive
-#RUN apt-get update && apt-get -y upgrade
-RUN apt-get update
-RUN apt-get -y install \
+
+RUN apt-get update && apt-get -y upgrade && apt-get -y install \
     p7zip-full \
     apt-transport-https \
     apt-utils \
@@ -14,15 +23,11 @@ RUN apt-get -y install \
     curl \
     file \
     gpg \
-    software-properties-common
+    software-properties-common \
+    && apt-get clean && rm -rf /var/cache/apt/* /var/lib/apt/lists/*
 
-RUN rm -rf /var/lib/apt/lists/*
-
-RUN curl -sS https://keyserver.ubuntu.com/pks/lookup?op=get\&search=0x3ed1eaece81894b171d7da5b5e80511b10c598b8 | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/gift.gpg
 RUN add-apt-repository -y ppa:gift/$PPA_TRACK
-RUN apt-get update && apt-get -y install \
-    plaso-tools \
-    --option Acquire::ForceIPv4=true --option Acquire::Retries=100 --option Acquire::http::Timeout=60
+RUN apt-get update && apt-get -y install plaso-tools
 
 RUN useradd -G disk,sudo -u 999 hashr
 RUN echo "hashr ALL = (root) NOPASSWD: /bin/mount,/bin/umount,/sbin/losetup,/bin/rm" > /etc/sudoers.d/hashr
@@ -30,7 +35,7 @@ RUN echo "hashr ALL = (root) NOPASSWD: /bin/mount,/bin/umount,/sbin/losetup,/bin
 USER root
 
 WORKDIR /usr/local/bin
-COPY hashr .
+COPY --from=hashr-builder /opt/hashr/hashr .
 
 VOLUME ["/data"]
 
