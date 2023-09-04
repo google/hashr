@@ -18,6 +18,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/google/hashr/core/hashr"
 
@@ -30,8 +31,37 @@ type Storage struct {
 	sqlDB *sql.DB
 }
 
-// NewStorage creates new Storage struct that allows to interact with PostgreSQL instance.
+// NewStorage creates new Storage struct that allows to interact with PostgreSQL instance and all the necessary tables, if they don't exist.
 func NewStorage(sqlDB *sql.DB) (*Storage, error) {
+	// Check if the "jobs" table exists.
+	exists, err := tableExists(sqlDB, "jobs")
+	if err != nil {
+		return nil, fmt.Errorf("error while checking if jobs table exists: %v", err)
+	}
+
+	if !exists {
+		sql := `CREATE TABLE jobs (
+		quick_sha256 VARCHAR(100) PRIMARY KEY,
+		imported_at INT NOT NULL,
+		id text,
+		repo text,
+		repo_path text,
+		location text,
+		sha256 VARCHAR(100),
+		status VARCHAR(50),
+		error text,
+		preprocessing_duration INT,
+		processing_duration INT,
+		export_duration INT,
+		files_extracted INT,
+		files_exported INT
+	  )`
+		_, err = sqlDB.Exec(sql)
+		if err != nil {
+			return nil, fmt.Errorf("error while creating jobs table: %v", err)
+		}
+	}
+
 	return &Storage{sqlDB: sqlDB}, nil
 }
 
@@ -97,4 +127,23 @@ func (s *Storage) FetchJobs(ctx context.Context) (map[string]string, error) {
 	}
 
 	return processed, nil
+}
+
+func tableExists(db *sql.DB, tableName string) (bool, error) {
+	// Query to check if the table exists in PostgreSQL
+	query := `
+        SELECT EXISTS (
+            SELECT 1
+            FROM   information_schema.tables
+            WHERE  table_name = $1
+        )
+    `
+
+	var exists bool
+	err := db.QueryRow(query, tableName).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
