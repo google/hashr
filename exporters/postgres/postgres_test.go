@@ -33,6 +33,11 @@ func TestExport(t *testing.T) {
 	}
 	defer db.Close()
 
+	mock.ExpectQuery(`SELECT EXISTS ( SELECT 1 FROM information_schema.tables WHERE table_name=$1 );`).WithArgs("samples").WillReturnRows(mock.NewRows([]string{"t"}).AddRow("t"))
+	mock.ExpectQuery(`SELECT EXISTS ( SELECT 1 FROM information_schema.tables WHERE table_name=$1 );`).WithArgs("payloads").WillReturnRows(mock.NewRows([]string{"t"}).AddRow("t"))
+	mock.ExpectQuery(`SELECT EXISTS ( SELECT 1 FROM information_schema.tables WHERE table_name=$1 );`).WithArgs("sources").WillReturnRows(mock.NewRows([]string{"t"}).AddRow("t"))
+	mock.ExpectQuery(`SELECT EXISTS ( SELECT 1 FROM information_schema.tables WHERE table_name=$1 );`).WithArgs("samples_sources").WillReturnRows(mock.NewRows([]string{"t"}).AddRow("t"))
+
 	postgresExporter, err := NewExporter(db, false)
 	if err != nil {
 		t.Fatalf("could not create Postgres exporter: %v", err)

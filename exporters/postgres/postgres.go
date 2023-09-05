@@ -48,8 +48,84 @@ func (e *Exporter) Name() string {
 	return Name
 }
 
-// NewExporter creates new Postregre exporter.
+// NewExporter creates new Postregre exporter and all the necessary tables, if they don't exist.
 func NewExporter(sqlDB *sql.DB, uploadPayloads bool) (*Exporter, error) {
+	// Check if the "samples" table exists.
+	exists, err := tableExists(sqlDB, "samples")
+	if err != nil {
+		return nil, fmt.Errorf("error while checking if samples table exists: %v", err)
+	}
+
+	if !exists {
+		sql := `CREATE TABLE samples (
+				sha256 VARCHAR(100)  PRIMARY KEY,
+				mimetype text,
+				file_output  text,
+				size INT
+		  )`
+		_, err = sqlDB.Exec(sql)
+		if err != nil {
+			return nil, fmt.Errorf("error while creating samples table: %v", err)
+		}
+	}
+
+	// Check if the "payloads" table exists.
+	exists, err = tableExists(sqlDB, "payloads")
+	if err != nil {
+		return nil, fmt.Errorf("error while checking if payloads table exists: %v", err)
+	}
+
+	if !exists {
+		sql := `CREATE TABLE payloads (
+				sha256 VARCHAR(100)  PRIMARY KEY,
+				payload bytea
+		  )`
+		_, err = sqlDB.Exec(sql)
+		if err != nil {
+			return nil, fmt.Errorf("error while creating payloads table: %v", err)
+		}
+	}
+
+	// Check if the "sources" table exists.
+	exists, err = tableExists(sqlDB, "sources")
+	if err != nil {
+		return nil, fmt.Errorf("error while checking if sources table exists: %v", err)
+	}
+
+	if !exists {
+		sql := `CREATE TABLE sources (
+			sha256 VARCHAR(100)  PRIMARY KEY,
+			sourceID  text[],
+			sourcePath  text,
+			sourceDescription text,
+			repoName text,
+			repoPath text
+		  )`
+		_, err = sqlDB.Exec(sql)
+		if err != nil {
+			return nil, fmt.Errorf("error while creating sources table: %v", err)
+		}
+	}
+
+	// Check if the "samples_sources" table exists.
+	exists, err = tableExists(sqlDB, "samples_sources")
+	if err != nil {
+		return nil, fmt.Errorf("error while checking if samples_sources table exists: %v", err)
+	}
+
+	if !exists {
+		sql := `CREATE TABLE samples_sources (
+			sample_sha256 VARCHAR(100) REFERENCES samples(sha256) NOT NULL,
+			source_sha256 VARCHAR(100) REFERENCES sources(sha256) NOT NULL,
+			sample_paths text[],
+			PRIMARY KEY (sample_sha256, source_sha256)
+		  )`
+		_, err = sqlDB.Exec(sql)
+		if err != nil {
+			return nil, fmt.Errorf("error while creating samples_sources table: %v", err)
+		}
+	}
+
 	return &Exporter{sqlDB: sqlDB, uploadPayloads: uploadPayloads}, nil
 }
 
@@ -282,4 +358,24 @@ func fileCmdOutput(filepath string) (string, error) {
 	}
 
 	return strings.TrimSuffix(stdout.String(), "\n"), nil
+}
+
+func tableExists(db *sql.DB, tableName string) (bool, error) {
+	// Query to check if the table exists in PostgreSQL
+	query := `
+        SELECT EXISTS (
+            SELECT 1
+            FROM   information_schema.tables
+            WHERE  table_name=$1
+        );
+    `
+
+	var exists bool
+
+	err := db.QueryRow(query, tableName).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
