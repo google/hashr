@@ -366,11 +366,12 @@ func tableExists(db *sql.DB, tableName string) (bool, error) {
         SELECT EXISTS (
             SELECT 1
             FROM   information_schema.tables
-            WHERE  table_name = $1
-        )
+            WHERE  table_name=$1
+        );
     `
 
 	var exists bool
+
 	err := db.QueryRow(query, tableName).Scan(&exists)
 	if err != nil {
 		return false, err
