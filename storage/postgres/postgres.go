@@ -31,7 +31,7 @@ type Storage struct {
 	sqlDB *sql.DB
 }
 
-// NewStorage creates new Storage struct that allows to interact with PostgreSQL instance and all the necessary tables, if they don't exist.git commit -m
+// NewStorage creates new Storage struct that allows to interact with PostgreSQL instance and all the necessary tables, if they don't exist.
 func NewStorage(sqlDB *sql.DB) (*Storage, error) {
 	// Check if the "jobs" table exists.
 	exists, err := tableExists(sqlDB, "jobs")
