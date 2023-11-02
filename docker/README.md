@@ -6,7 +6,9 @@ If you want a local installation, check [these steps](https://github.com/google/
 
 ## Table of contents
 
-* [Pull the HashR image](#pull-the-hashr-image)
+* [HashR docker image](#hashr-docker-image)
+  * [Pull the HashR image](#pull-the-hashr-image)
+  * [Build the HashR image](#build-the-hashr-image)
 * [Setup a database and importers](#setup-a-database-and-importers)
     * [Database](#database)
     * [Importers](#importers)
@@ -15,7 +17,11 @@ If you want a local installation, check [these steps](https://github.com/google/
     * [Examples](#examples)
 
 
-## Pull the HashR image
+## HashR docker image
+
+You can either use our hosted docker image or build it yourself.
+
+### Pull the HashR image
 
 The HashR docker image will provide the HashR binary and tools it needs to
 work.
@@ -30,6 +36,14 @@ Pulling a specific release tag:
 
 ```shell
 docker pull us-docker.pkg.dev/osdfir-registry/hashr/release/hashr:v1.7.1
+```
+
+### Build the HashR image
+
+From the repository root folder run the following command:
+
+```shell
+docker build -f docker/Dockerfile .
 ```
 
 ## Setup a database and importers
