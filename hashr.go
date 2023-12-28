@@ -22,6 +22,9 @@ import (
 	"strings"
 
 	"cloud.google.com/go/spanner"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/golang/glog"
 	"github.com/google/hashr/core/hashr"
 	gcpExporter "github.com/google/hashr/exporters/gcp"
@@ -43,6 +46,8 @@ import (
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/storage/v1"
+
+	awsImporter "github.com/google/hashr/importers/aws"
 )
 
 var (
@@ -86,6 +91,12 @@ var (
 	gcrRepos = flag.String("gcr_repos", "", "Comma separated list of GCR (Google Container Registry) repos.")
 	// iso importer flags
 	isoRepoPath = flag.String("iso_repo_path", "", "Path to ISO9660 repository.")
+
+	// AWS importer flags
+	awsBucket   = flag.String("aws_bucket", "debian,ubuntu,amazon-linux", "HashR S3 bucket")
+	awsSshUser  = flag.String("aws_ssh_user", "ec2-user", "EC2 SSH user")
+	awsOsFilter = flag.String("aws_os_filter", "", "Comma-separated list of OS filter keywords")
+	awsOsArch   = flag.String("aws_os_arch", "x86_64", "Comma-separated list of OS architecture x86_64, arm64, x86_64_mac")
 )
 
 func main() {
@@ -155,6 +166,23 @@ func main() {
 			}
 			for _, gcrRepo := range strings.Split(*gcrRepos, ",") {
 				r, err := gcr.NewRepo(ctx, tokenSource, gcrRepo)
+				if err != nil {
+					glog.Exit(err)
+				}
+				importers = append(importers, r)
+			}
+		case awsImporter.RepoName, strings.ToLower(awsImporter.RepoName):
+			awsconfig, err := config.LoadDefaultConfig(context.TODO())
+			if err != nil {
+				glog.Exit(err)
+			}
+
+			ec2client := ec2.NewFromConfig(awsconfig)
+			s3client := s3.NewFromConfig(awsconfig)
+
+			osarchs := strings.Split(*awsOsArch, ",")
+			for _, osfilter := range strings.Split(*awsOsFilter, ",") {
+				r, err := awsImporter.NewRepo(ctx, &awsconfig, ec2client, s3client, *awsBucket, *awsSshUser, osfilter, osarchs)
 				if err != nil {
 					glog.Exit(err)
 				}
