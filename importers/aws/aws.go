@@ -43,11 +43,10 @@ const (
 
 // AWS API clients and global configuration vars.
 var (
-	awsconfig  *aws.Config
-	ec2client  *ec2.Client
-	s3client   *s3.Client
-	bucketname string
-	sshuser    string
+	ec2Client  *ec2.Client
+	s3Client   *s3.Client
+	bucketName string
+	sshUser    string
 )
 
 // instanceMap stores the state of the available EC2 HashR worker instances.
@@ -62,8 +61,8 @@ func init() {
 	instanceMap = make(map[string]string)
 }
 
-// AwsImage holds data related to AWS image.
-type AwsImage struct {
+// image holds data related to AWS image.
+type image struct {
 	localImage      types.Image
 	sourceImage     types.Image
 	localTarGzPath  string
@@ -73,11 +72,11 @@ type AwsImage struct {
 	regionName      string
 	volumeId        string
 	device          string
-	sshclient       *ssh.Client
+	sshClient       *ssh.Client
 }
 
 // Preprocess creates tar.gz file from an image, copies to local storage, and extracts it.
-func (i *AwsImage) Preprocess() (string, error) {
+func (i *image) Preprocess() (string, error) {
 	var err error
 
 	i.localImage = types.Image{ImageId: aws.String("")}
@@ -88,7 +87,7 @@ func (i *AwsImage) Preprocess() (string, error) {
 	}
 	glog.Infof("Using worker instance %s to process %s", *i.instance.InstanceId, *i.sourceImage.ImageId)
 
-	i.sshclient, err = setupSSHClient(sshuser, *i.instance.KeyName, *i.instance.PublicDnsName)
+	i.sshClient, err = setupsshClient(sshUser, *i.instance.KeyName, *i.instance.PublicDnsName)
 	if err != nil {
 		return "", err
 	}
@@ -125,42 +124,42 @@ func (i *AwsImage) Preprocess() (string, error) {
 }
 
 // ID returns Amazon owned AMI ID.
-func (i *AwsImage) ID() string {
+func (i *image) ID() string {
 	return *i.sourceImage.ImageId
 }
 
 // RepoName returns the repository name.
-func (i *AwsImage) RepoName() string {
+func (i *image) RepoName() string {
 	return RepoName
 }
 
 // RepoPath returns the tar.gz image disk in AWS HashR bucket.
-func (i *AwsImage) RepoPath() string {
+func (i *image) RepoPath() string {
 	return i.remoteTarGzPath
 }
 
 // LocalPath returns the local path of the AMI tar.gz file.
-func (i *AwsImage) LocalPath() string {
+func (i *image) LocalPath() string {
 	return i.localTarGzPath
 }
 
 // ArchiveName returns the tar.gz archive filename of the disk.
-func (i *AwsImage) ArchiveName() string {
+func (i *image) ArchiveName() string {
 	return fmt.Sprintf("%s.tar.gz", *i.sourceImage.ImageId)
 }
 
 // RemotePath returns disk archive path in AWS.
-func (i *AwsImage) RemotePath() string {
-	return fmt.Sprintf("s3://%s/%s", bucketname, i.ArchiveName())
+func (i *image) RemotePath() string {
+	return fmt.Sprintf("s3://%s/%s", bucketName, i.ArchiveName())
 }
 
 // Description provides additional description for the Amazon owned AMI.
-func (i *AwsImage) Description() string {
+func (i *image) Description() string {
 	return *i.sourceImage.Description
 }
 
 // QuickSHA256Hash returns SHA256 of custom properties of an Amazon owned AMI.
-func (i *AwsImage) QuickSHA256Hash() (string, error) {
+func (i *image) QuickSHA256Hash() (string, error) {
 	if i.quickSha256Hash != "" {
 		return i.quickSha256Hash, nil
 	}
@@ -189,18 +188,17 @@ func (i *AwsImage) QuickSHA256Hash() (string, error) {
 type Repo struct {
 	osfilter string
 	osarchs  []string
-	images   []*AwsImage
+	images   []*image
 }
 
 // NewRepo returns a new instance of AWS repository (Repo).
-func NewRepo(ctx context.Context, hashrAwsConfig *aws.Config, hashrEc2Client *ec2.Client, hashrS3Client *s3.Client, hashrBucketName string, hashrSshUser string, osfilter string, osarchs []string) (*Repo, error) {
+func NewRepo(ctx context.Context, hashrEc2Client *ec2.Client, hashrS3Client *s3.Client, hashrBucketName string, hashrSshUser string, osfilter string, osarchs []string) (*Repo, error) {
 	glog.Infof("Creating new repo for OS filter %s", osfilter)
 	// Setting global variables
-	awsconfig = hashrAwsConfig
-	ec2client = hashrEc2Client
-	s3client = hashrS3Client
-	bucketname = hashrBucketName
-	sshuser = hashrSshUser
+	ec2Client = hashrEc2Client
+	s3Client = hashrS3Client
+	bucketName = hashrBucketName
+	sshUser = hashrSshUser
 
 	return &Repo{
 		osfilter: osfilter,
@@ -220,7 +218,7 @@ func (r *Repo) RepoPath() string {
 
 // DiscoverRepo returns a list of AMI matching the AMI filters.
 func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
-	out, err := ec2client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{
+	out, err := ec2Client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("owner-alias"),
@@ -240,11 +238,11 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 
 	var sources []hashr.Source
 
-	for _, image := range out.Images {
-		if image.Name != nil && strings.Contains(strings.ToLower(*image.Name), strings.ToLower(r.osfilter)) {
-			glog.Infof("Discovered %s matching filter %s", *image.ImageId, r.osfilter)
+	for _, i := range out.Images {
+		if i.Name != nil && strings.Contains(strings.ToLower(*i.Name), strings.ToLower(r.osfilter)) {
+			glog.Infof("Discovered %s matching filter %s", *i.ImageId, r.osfilter)
 
-			r.images = append(r.images, &AwsImage{sourceImage: image})
+			r.images = append(r.images, &image{sourceImage: i})
 		}
 	}
 
@@ -259,8 +257,8 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 //
 // If available instances do not exist, it returns an empty types.Instance and
 // error message indicating no free instances.
-func (i *AwsImage) getWorkerInstance() (types.Instance, error) {
-	diout, err := ec2client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{})
+func (i *image) getWorkerInstance() (types.Instance, error) {
+	diout, err := ec2Client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{})
 	if err != nil {
 		return types.Instance{}, err
 	}
@@ -289,8 +287,8 @@ func (i *AwsImage) getWorkerInstance() (types.Instance, error) {
 }
 
 // region returns AWS availability region for the project.
-func (i *AwsImage) region() (string, error) {
-	dazOut, err := ec2client.DescribeAvailabilityZones(context.TODO(), &ec2.DescribeAvailabilityZonesInput{})
+func (i *image) region() (string, error) {
+	dazOut, err := ec2Client.DescribeAvailabilityZones(context.TODO(), &ec2.DescribeAvailabilityZonesInput{})
 	if err != nil {
 		return "", err
 	}
@@ -311,9 +309,9 @@ func (i *AwsImage) region() (string, error) {
 //
 // Note: This operation will create a new AMI on HashR project.
 // Disk image is created based on the snapshot in AMI in the HashR project.
-func (i *AwsImage) copy() error {
+func (i *image) copy() error {
 	targetImageName := fmt.Sprintf("copy-%s", *i.sourceImage.ImageId)
-	ciout, err := ec2client.CopyImage(context.TODO(), &ec2.CopyImageInput{
+	ciout, err := ec2Client.CopyImage(context.TODO(), &ec2.CopyImageInput{
 		Name:          aws.String(targetImageName),
 		SourceImageId: aws.String(*i.sourceImage.ImageId),
 		SourceRegion:  aws.String(i.regionName),
@@ -327,7 +325,7 @@ func (i *AwsImage) copy() error {
 	for w := 0; w < buildTimeout/100; w++ {
 		time.Sleep(30 * time.Second)
 
-		diout, err := ec2client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{
+		diout, err := ec2Client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{
 			ImageIds: []string{*ciout.ImageId},
 		})
 		if err != nil {
@@ -349,7 +347,7 @@ func (i *AwsImage) copy() error {
 }
 
 // export exports a tar.gz disk image to AWS S3 bucket.
-func (i *AwsImage) export() error {
+func (i *image) export() error {
 	if len(i.localImage.BlockDeviceMappings) < 1 {
 		return fmt.Errorf("no block device for %s", *i.localImage.ImageId)
 	}
@@ -358,7 +356,7 @@ func (i *AwsImage) export() error {
 	volumeSize := int32(*i.localImage.BlockDeviceMappings[0].Ebs.VolumeSize)
 	glog.Infof("Using snapshot %s of the image %s to create volume", snapshotId, *i.sourceImage.ImageId)
 
-	dsout, err := ec2client.DescribeSnapshots(context.TODO(), &ec2.DescribeSnapshotsInput{
+	dsout, err := ec2Client.DescribeSnapshots(context.TODO(), &ec2.DescribeSnapshotsInput{
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("snapshot-id"),
@@ -375,7 +373,7 @@ func (i *AwsImage) export() error {
 	i.volumeId = *snapshot.VolumeId
 	if i.volumeId == "vol-ffffffff" {
 		glog.Infof("No existing volume for snapshot %s. Creating a new volume...", snapshotId)
-		cvout, err := ec2client.CreateVolume(context.TODO(), &ec2.CreateVolumeInput{
+		cvout, err := ec2Client.CreateVolume(context.TODO(), &ec2.CreateVolumeInput{
 			SnapshotId:       aws.String(snapshotId),
 			VolumeType:       types.VolumeTypeGp2,
 			Size:             aws.Int32(volumeSize),
@@ -393,7 +391,7 @@ func (i *AwsImage) export() error {
 	for w := 0; w < buildTimeout/100; w++ {
 		time.Sleep(10 * time.Second)
 
-		dvout, err := ec2client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{
+		dvout, err := ec2Client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{
 			Filters: []types.Filter{
 				{
 					Name:   aws.String("volume-id"),
@@ -412,13 +410,13 @@ func (i *AwsImage) export() error {
 		}
 	}
 
-	i.device, err = getAvailableDevice(i.sshclient)
+	i.device, err = getAvailableDevice(i.sshClient)
 	if err != nil {
 		return err
 	}
 
 	glog.Infof("Using %s to attach volume %s on instance %s", i.device, i.volumeId, *i.instance.InstanceId)
-	_, err = ec2client.AttachVolume(context.TODO(), &ec2.AttachVolumeInput{
+	_, err = ec2Client.AttachVolume(context.TODO(), &ec2.AttachVolumeInput{
 		Device:     aws.String(i.device),
 		InstanceId: aws.String(*i.instance.InstanceId),
 		VolumeId:   aws.String(i.volumeId),
@@ -430,7 +428,7 @@ func (i *AwsImage) export() error {
 	volumeAttached := false
 	for w := 0; w < buildTimeout/100; w++ {
 		time.Sleep(10 * time.Second)
-		dvout, err := ec2client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{
+		dvout, err := ec2Client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{
 			Filters: []types.Filter{
 				{
 					Name:   aws.String("volume-id"),
@@ -461,8 +459,8 @@ func (i *AwsImage) export() error {
 
 	// Create disk image on a remote EC2 instance
 	glog.Infof("Creating disk archive from image %s (volume %s) on instance %s", *i.sourceImage.ImageId, i.volumeId, *i.instance.InstanceId)
-	sshcmd := fmt.Sprintf("nohup /usr/local/sbin/hashr-archive %s %s %s &", i.device, *i.sourceImage.ImageId, bucketname)
-	_, err = runSshCommand(i.sshclient, sshcmd)
+	sshcmd := fmt.Sprintf("nohup /usr/local/sbin/hashr-archive %s %s %s &", i.device, *i.sourceImage.ImageId, bucketName)
+	_, err = runSshCommand(i.sshClient, sshcmd)
 	if err != nil {
 		return err
 	}
@@ -473,7 +471,7 @@ func (i *AwsImage) export() error {
 	for w := 0; w < buildTimeout/10; w++ {
 		time.Sleep(10 * time.Second)
 		statuscmd := fmt.Sprintf("ls %s", remoteDoneFile)
-		sshout, err := runSshCommand(i.sshclient, statuscmd)
+		sshout, err := runSshCommand(i.sshClient, statuscmd)
 		if err != nil {
 			glog.Errorf("error executing remote command %s: %v", statuscmd, err)
 		}
@@ -494,21 +492,21 @@ func (i *AwsImage) export() error {
 }
 
 // cleanup deletes the copied images and done file on HashR worker.
-func (i *AwsImage) cleanup(deleteRemotePath bool) error {
+func (i *image) cleanup(deleteRemotePath bool) error {
 	glog.Info("Cleaning up...")
 	var err error
 
 	// Delete <image>.tar.gz.done file
 	remoteDoneFile := fmt.Sprintf("/data/%s.done", i.ArchiveName())
 	sshcmd := fmt.Sprintf("nohup rm -f %s &", remoteDoneFile)
-	_, err = runSshCommand(i.sshclient, sshcmd)
+	_, err = runSshCommand(i.sshClient, sshcmd)
 	if err != nil {
 		glog.Errorf("Error deleting %s on %s: %v", remoteDoneFile, *i.instance.InstanceId, err)
 	}
 
 	// Detach and delete volume
 	deleteVolume := true
-	_, err = ec2client.DetachVolume(context.TODO(), &ec2.DetachVolumeInput{
+	_, err = ec2Client.DetachVolume(context.TODO(), &ec2.DetachVolumeInput{
 		VolumeId:   aws.String(i.volumeId),
 		Device:     aws.String(i.device),
 		InstanceId: aws.String(*i.instance.InstanceId),
@@ -522,7 +520,7 @@ func (i *AwsImage) cleanup(deleteRemotePath bool) error {
 		ready := false
 		for w := 0; w < buildTimeout/100; w++ {
 			time.Sleep(10 * time.Second)
-			dvout, err := ec2client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{
+			dvout, err := ec2Client.DescribeVolumes(context.TODO(), &ec2.DescribeVolumesInput{
 				Filters: []types.Filter{
 					{
 						Name:   aws.String("volume-id"),
@@ -542,7 +540,7 @@ func (i *AwsImage) cleanup(deleteRemotePath bool) error {
 		}
 
 		if ready {
-			_, err = ec2client.DeleteVolume(context.TODO(), &ec2.DeleteVolumeInput{
+			_, err = ec2Client.DeleteVolume(context.TODO(), &ec2.DeleteVolumeInput{
 				VolumeId: aws.String(i.volumeId),
 			})
 			if err != nil {
@@ -553,8 +551,8 @@ func (i *AwsImage) cleanup(deleteRemotePath bool) error {
 
 	// Delete S3 bucket object
 	if deleteRemotePath {
-		_, err = s3client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
-			Bucket: aws.String(bucketname),
+		_, err = s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+			Bucket: aws.String(bucketName),
 			Key:    aws.String(i.ArchiveName()),
 		})
 		if err != nil {
@@ -571,7 +569,7 @@ func (i *AwsImage) cleanup(deleteRemotePath bool) error {
 	return nil
 }
 
-func (i *AwsImage) download() error {
+func (i *image) download() error {
 	tempDir, err := common.LocalTempDir(i.ID())
 	if err != nil {
 		return err
@@ -580,7 +578,7 @@ func (i *AwsImage) download() error {
 
 	glog.Infof("Downloading %s to %s", i.RemotePath(), i.localTarGzPath)
 	var partMiBs int64 = 10
-	downloader := manager.NewDownloader(s3client, func(d *manager.Downloader) {
+	downloader := manager.NewDownloader(s3Client, func(d *manager.Downloader) {
 		d.PartSize = partMiBs * 1024 * 1024
 	})
 
@@ -591,7 +589,7 @@ func (i *AwsImage) download() error {
 	defer outFile.Close()
 
 	_, err = downloader.Download(context.TODO(), outFile, &s3.GetObjectInput{
-		Bucket: aws.String(bucketname),
+		Bucket: aws.String(bucketName),
 		Key:    aws.String(i.ArchiveName()),
 	})
 	if err != nil {
@@ -603,7 +601,7 @@ func (i *AwsImage) download() error {
 	return nil
 }
 
-func setupSSHClient(user string, keyname string, server string) (*ssh.Client, error) {
+func setupsshClient(user string, keyname string, server string) (*ssh.Client, error) {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -628,9 +626,9 @@ func setupSSHClient(user string, keyname string, server string) (*ssh.Client, er
 	return ssh.Dial("tcp", fmt.Sprintf("%s:22", server), sshconfig)
 }
 
-func runSshCommand(sshclient *ssh.Client, cmd string) (string, error) {
+func runSshCommand(sshClient *ssh.Client, cmd string) (string, error) {
 	glog.Infof("Running SSH command %s", cmd)
-	session, err := sshclient.NewSession()
+	session, err := sshClient.NewSession()
 	if err != nil {
 		return "", err
 	}
@@ -646,9 +644,9 @@ func runSshCommand(sshclient *ssh.Client, cmd string) (string, error) {
 	return buf.String(), nil
 }
 
-func getAvailableDevice(sshclient *ssh.Client) (string, error) {
+func getAvailableDevice(sshClient *ssh.Client) (string, error) {
 	deviceChars := []string{"i", "j", "k", "l", "m", "sdn", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
-	out, err := runSshCommand(sshclient, "ls /dev/sd* | egrep -v '.*[0-9]$'")
+	out, err := runSshCommand(sshClient, "ls /dev/sd* | egrep -v '.*[0-9]$'")
 	if err != nil {
 		return "/dev/sdh", nil
 	}
@@ -682,7 +680,7 @@ func instanceInUse(instance types.Instance) bool {
 }
 
 func setInstanceTag(instanceId string, tagKey string, tagValue string) error {
-	_, err := ec2client.CreateTags(context.TODO(), &ec2.CreateTagsInput{
+	_, err := ec2Client.CreateTags(context.TODO(), &ec2.CreateTagsInput{
 		Resources: []string{instanceId},
 		Tags: []types.Tag{
 			{

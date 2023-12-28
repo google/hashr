@@ -172,17 +172,17 @@ func main() {
 				importers = append(importers, r)
 			}
 		case awsImporter.RepoName, strings.ToLower(awsImporter.RepoName):
-			awsconfig, err := config.LoadDefaultConfig(context.TODO())
+			awsConfig, err := config.LoadDefaultConfig(context.TODO())
 			if err != nil {
 				glog.Exit(err)
 			}
 
-			ec2client := ec2.NewFromConfig(awsconfig)
-			s3client := s3.NewFromConfig(awsconfig)
+			ec2Client := ec2.NewFromConfig(awsConfig)
+			s3Client := s3.NewFromConfig(awsConfig)
 
 			osarchs := strings.Split(*awsOsArch, ",")
 			for _, osfilter := range strings.Split(*awsOsFilter, ",") {
-				r, err := awsImporter.NewRepo(ctx, &awsconfig, ec2client, s3client, *awsBucket, *awsSshUser, osfilter, osarchs)
+				r, err := awsImporter.NewRepo(ctx, ec2Client, s3Client, *awsBucket, *awsSshUser, osfilter, osarchs)
 				if err != nil {
 					glog.Exit(err)
 				}
