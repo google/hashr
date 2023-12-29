@@ -218,27 +218,14 @@ func (r *Repo) RepoPath() string {
 
 // DiscoverRepo returns a list of AMI matching the AMI filters.
 func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
-	out, err := ec2Client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{
-		Filters: []types.Filter{
-			{
-				Name:   aws.String("owner-alias"),
-				Values: []string{"amazon"},
-			},
-			{
-				Name:   aws.String("architecture"),
-				Values: r.osarchs,
-			},
-		},
-		IncludeDeprecated: aws.Bool(false),
-		IncludeDisabled:   aws.Bool(false),
-	})
+	var sources []hashr.Source
+
+	images, err := getAmazonImages(context.TODO(), ec2Client, r.osarchs)
 	if err != nil {
 		return nil, err
 	}
 
-	var sources []hashr.Source
-
-	for _, i := range out.Images {
+	for _, i := range images {
 		if i.Name != nil && strings.Contains(strings.ToLower(*i.Name), strings.ToLower(r.osfilter)) {
 			glog.Infof("Discovered %s matching filter %s", *i.ImageId, r.osfilter)
 
@@ -246,8 +233,8 @@ func (r *Repo) DiscoverRepo() ([]hashr.Source, error) {
 		}
 	}
 
-	for _, awsimage := range r.images {
-		sources = append(sources, awsimage)
+	for _, i := range r.images {
+		sources = append(sources, i)
 	}
 
 	return sources, nil
@@ -690,4 +677,28 @@ func setInstanceTag(instanceId string, tagKey string, tagValue string) error {
 		},
 	})
 	return err
+}
+
+type Ec2DescribeImagesAPI interface {
+	DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
+}
+
+func getAmazonImages(ctx context.Context, api Ec2DescribeImagesAPI, architectures []string) ([]types.Image, error) {
+	out, err := api.DescribeImages(ctx, &ec2.DescribeImagesInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("owner-alias"),
+				Values: []string{"amazon"},
+			},
+			{
+				Name:   aws.String("architecture"),
+				Values: architectures,
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Images, nil
 }
