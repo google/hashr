@@ -93,9 +93,9 @@ var (
 	isoRepoPath = flag.String("iso_repo_path", "", "Path to ISO9660 repository.")
 
 	// AWS importer flags
-	awsBucket   = flag.String("aws_bucket", "debian,ubuntu,amazon-linux", "HashR S3 bucket")
-	awsSshUser  = flag.String("aws_ssh_user", "ec2-user", "EC2 SSH user")
-	awsOsFilter = flag.String("aws_os_filter", "", "Comma-separated list of OS filter keywords")
+	awsBucket   = flag.String("aws_bucket", "", "HashR S3 bucket")
+	awsSSHUser  = flag.String("aws_ssh_user", "ec2-user", "EC2 SSH user")
+	awsOsFilter = flag.String("aws_os_filter", "debian,ubuntu", "Comma-separated list of OS filter keywords")
 	awsOsArch   = flag.String("aws_os_arch", "x86_64", "Comma-separated list of OS architecture x86_64, arm64, x86_64_mac")
 )
 
@@ -182,7 +182,7 @@ func main() {
 
 			osarchs := strings.Split(*awsOsArch, ",")
 			for _, osfilter := range strings.Split(*awsOsFilter, ",") {
-				r, err := awsImporter.NewRepo(ctx, ec2Client, s3Client, *awsBucket, *awsSshUser, osfilter, osarchs)
+				r, err := awsImporter.NewRepo(ctx, ec2Client, s3Client, *awsBucket, *awsSSHUser, osfilter, osarchs)
 				if err != nil {
 					glog.Exit(err)
 				}
