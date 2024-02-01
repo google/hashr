@@ -127,7 +127,14 @@ func (i *image) Preprocess() (string, error) {
 
 // ID returns Amazon owned AMI ID.
 func (i *image) ID() string {
-	return *i.sourceImage.ImageId
+	// Replacing spaces, (, and ) with _.
+	imageName := strings.Replace(*i.sourceImage.ImageLocation, "amazon", "", -1)
+	imageName = strings.Replace(imageName, "/", "_", -1)
+	imageName = strings.Replace(imageName, " ", "_", -1)
+	imageName = strings.Replace(imageName, "(", "_", -1)
+	imageName = strings.Replace(imageName, ")", "_", -1)
+
+	return fmt.Sprintf("%s_%s", *i.sourceImage.ImageId, imageName)
 }
 
 // RepoName returns the repository name.

@@ -17,12 +17,17 @@
 # A HashR - AWS disk archival creation script.
 
 name=`basename $0`
-logfile=$HOME/hashr-archive.`hostname`.log
-outputdir=/data
+workingdir=/data
+logfile=${workingdir}/hashr-archive.`hostname`.log
+
+if [ ! -f ${logfile} ]; then
+        sudo touch ${logfile}
+        sudo chmod 666 ${logfile}
+fi
 
 if [ $# -ne 3 ]; then
-	echo "${name}: two arguments required"
-	exit
+        echo "${name}: two arguments required"
+        exit
 fi
 
 device="$1"
@@ -30,77 +35,81 @@ imageid="$2"
 bucket="$3"
 
 tarGzName="${imageid}.tar.gz"
-tarGzPath=${outputdir}/${tarGzName}
+tarGzPath=${workingdir}/${tarGzName}
 
 function log_message() {
-	echo -e "`date --utc +'%Y-%m-%dT%H:%M:%SZ'` ${name}: $1" >> $logfile
+        echo -e "`date --utc +'%Y-%m-%dT%H:%M:%SZ'` ${name}: $1" >> $logfile
 }
 
 function check_execution_status() {
-	local statusCode=$1
-	local statusMessage="$2"
-	local MAX_SIZE=90
+        local statusCode=$1
+        local statusMessage="$2"
+        local MAX_SIZE=90
 
-	messageSize=${#statusMessage}
-	paddingSize=`expr ${MAX_SIZE} - ${messageSize}`
+        messageSize=${#statusMessage}
+        paddingSize=`expr ${MAX_SIZE} - ${messageSize}`
 
-	padding=""
-	if [ ${paddingSize} -gt 0 ]; then
-		for i in $(seq 0 ${paddingSize})
-		do
-			padding+=" "
-		done
-	fi
+        padding=""
+        if [ ${paddingSize} -gt 0 ]; then
+                for i in $(seq 0 ${paddingSize})
+                do
+                        padding+=" "
+                done
+        fi
 
-	if [ ${statusCode} -eq 0 ]; then
-		log_message "${statusMessage} ${padding} [ COMPLETED ]"
-	else
-		log_message "${statusMessage} ${padding} [ FAILED ]"
-	fi
+        if [ ${statusCode} -eq 0 ]; then
+                log_message "${statusMessage} ${padding} [ COMPLETED ]"
+        else
+                log_message "${statusMessage} ${padding} [ FAILED ]"
+        fi
 }
 
 if [ "${device}" == "" ]; then
-	echo "${name}: Device (param1) is required"
-	log_messsag "Device (param1) is required"
-	exit 1
+        echo "${name}: Device (param1) is required"
+        log_messsag "Device (param1) is required"
+        exit 1
 fi
 
 if [[ "${device}" =~ ^/dev/[a-z]{3,4}$ ]]; then
-	log_message "Device ${device} is valid"
+        log_message "Device ${device} is valid"
 else
-	echo "${name}: Device pattern does not match"
-	log_message "${device} does not match required pattern"
-	exit 1
+        echo "${name}: Device pattern does not match"
+        log_message "${device} does not match required pattern"
+        exit 1
 fi
 
 if [ "${imageid}" == "" ]; then
-	echo "imageid (param2) is required"
-	log_message "imageid (param2) is required"
-	exit 1
+        echo "imageid (param2) is required"
+        log_message "imageid (param2) is required"
+        exit 1
 fi
 
 if [ "${bucket}" == "" ]; then
-	echo "${name}: S3 bucket (param3) is required"
-	log_message "S3 bucket (param3) is required"
-	exit 1
+        echo "${name}: S3 bucket (param3) is required"
+        log_message "S3 bucket (param3) is required"
+        exit 1
 fi
 
+cd ${workingdir}
 
-sudo dd if=${device} of=${outputdir}/${imageid} bs=1M
-check_execution_status $? "Creating raw disk image ${outputdir}/${imageid} from ${device}"
+log_message "Creating raw disk image"
+sudo dd if=${device} of=${imageid} bs=1M >> ${logfile} 2>&1
+check_execution_status $? "Creating raw disk image ${workingdir}/${imageid} from ${device}"
 
-sudo tar -C ${outputdir} -zcf ${tarGzPath} ${imageid} > /dev/null 2>&1
+log_message "Creating raw disk archive"
+sudo tar -C ${workingdir} -zcf ${tarGzPath} ${imageid} >> ${logfile} 2>&1
 check_execution_status $? "Creating raw disk archive ${tarGzName}"
 
 log_message "Uploading disk image ${tarGzPath} to ${bucket}"
-aws s3 cp ${tarGzPath} s3://${bucket} > /dev/null 2>&1
+aws s3 cp ${tarGzPath} s3://${bucket} >> ${logfile} 2>&1
 check_execution_status $? "Disk upload to ${bucket} completed"
 
-sudo rm -f ${outputdir}/${imageid}
+log_message "Removing disk image"
+sudo rm -f ${imageid} >> ${logfile} 2>&1
 check_execution_status $? "Removing disk ${imageid}"
 
 log_message "Removing disk image ${tarGzPath}"
-sudo rm -f ${tarGzPath}
+sudo rm -f ${tarGzPath} >> ${logfile} 2>&1
 check_execution_status $? "Disk removal ${tarGzPath} completed"
 
 log_message "Creation done file ${tarGzPath}.done"
