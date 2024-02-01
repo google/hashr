@@ -35,12 +35,12 @@ func (m mockDescribeImagesAPI) DescribeImages(ctx context.Context, params *ec2.D
 
 func TestDiscoveryRepo(t *testing.T) {
 	cases := []struct {
-		client       func(t *testing.T) Ec2DescribeImagesAPI
+		client       func(t *testing.T) ec2DescribeImagesAPI
 		architecture []string
 		expect       []byte
 	}{
 		{
-			client: func(t *testing.T) Ec2DescribeImagesAPI {
+			client: func(t *testing.T) ec2DescribeImagesAPI {
 				return mockDescribeImagesAPI(func(ctx context.Context, params *ec2.DescribeImagesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
 					t.Helper()
 
