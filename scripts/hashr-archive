@@ -1,0 +1,118 @@
+#!/bin/bash
+#
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# A HashR - AWS disk archival creation script.
+
+name=`basename $0`
+workingdir=/data
+logfile=${workingdir}/hashr-archive.`hostname`.log
+
+if [ ! -f ${logfile} ]; then
+        sudo touch ${logfile}
+        sudo chmod 666 ${logfile}
+fi
+
+if [ $# -ne 3 ]; then
+        echo "${name}: two arguments required"
+        exit
+fi
+
+device="$1"
+imageid="$2"
+bucket="$3"
+
+tarGzName="${imageid}.tar.gz"
+tarGzPath=${workingdir}/${tarGzName}
+
+function log_message() {
+        echo -e "`date --utc +'%Y-%m-%dT%H:%M:%SZ'` ${name}: $1" >> $logfile
+}
+
+function check_execution_status() {
+        local statusCode=$1
+        local statusMessage="$2"
+        local MAX_SIZE=90
+
+        messageSize=${#statusMessage}
+        paddingSize=`expr ${MAX_SIZE} - ${messageSize}`
+
+        padding=""
+        if [ ${paddingSize} -gt 0 ]; then
+                for i in $(seq 0 ${paddingSize})
+                do
+                        padding+=" "
+                done
+        fi
+
+        if [ ${statusCode} -eq 0 ]; then
+                log_message "${statusMessage} ${padding} [ COMPLETED ]"
+        else
+                log_message "${statusMessage} ${padding} [ FAILED ]"
+        fi
+}
+
+if [ "${device}" == "" ]; then
+        echo "${name}: Device (param1) is required"
+        log_messsag "Device (param1) is required"
+        exit 1
+fi
+
+if [[ "${device}" =~ ^/dev/[a-z]{3,4}$ ]]; then
+        log_message "Device ${device} is valid"
+else
+        echo "${name}: Device pattern does not match"
+        log_message "${device} does not match required pattern"
+        exit 1
+fi
+
+if [ "${imageid}" == "" ]; then
+        echo "imageid (param2) is required"
+        log_message "imageid (param2) is required"
+        exit 1
+fi
+
+if [ "${bucket}" == "" ]; then
+        echo "${name}: S3 bucket (param3) is required"
+        log_message "S3 bucket (param3) is required"
+        exit 1
+fi
+
+cd ${workingdir}
+
+log_message "Creating raw disk image"
+sudo dd if=${device} of=${imageid} bs=1M >> ${logfile} 2>&1
+check_execution_status $? "Creating raw disk image ${workingdir}/${imageid} from ${device}"
+
+log_message "Creating raw disk archive"
+sudo tar -C ${workingdir} -zcf ${tarGzPath} ${imageid} >> ${logfile} 2>&1
+check_execution_status $? "Creating raw disk archive ${tarGzName}"
+
+log_message "Uploading disk image ${tarGzPath} to ${bucket}"
+aws s3 cp ${tarGzPath} s3://${bucket} >> ${logfile} 2>&1
+check_execution_status $? "Disk upload to ${bucket} completed"
+
+log_message "Removing disk image"
+sudo rm -f ${imageid} >> ${logfile} 2>&1
+check_execution_status $? "Removing disk ${imageid}"
+
+log_message "Removing disk image ${tarGzPath}"
+sudo rm -f ${tarGzPath} >> ${logfile} 2>&1
+check_execution_status $? "Disk removal ${tarGzPath} completed"
+
+log_message "Creation done file ${tarGzPath}.done"
+sudo touch ${tarGzPath}.done
+check_execution_status $? "Creation of ${tarGzPath}.done completed"
+
