@@ -489,6 +489,35 @@ On the system that runs the `hashr` the following is required.
 - AWS account configuration and credential file must be located at `$HOME/.aws/` directory.
 - The SSH private key used for AWS HashR must be located in the `$HOME/.ssh/` directory. It must match the value of `Keyname` as described in `aws ec2 describe-instances --instance-id INSTANCE_ID | jq -r ‘.Reservations[].Instances[0].Keyname’
 
+##### Setting up AWS EC2 Instance
+
+This section describes how to create EC2 instances to use with HashR. Ideally we want two AWS accounts `hashr.uploader` and `hashr.worker`.
+
+`hashr.uploader` is used on EC2 instances and needs permissions to upload archived disk images to S3 bucket. `scripts/aws/AwsHashrUploaderPolicy.json` contains sample policy for the S3 bucket `hashr-bucket`.
+
+`hashr.worker` is used on the computer running HashR commands. The account needs EC2 and S3 permissions. `scripts/aws/AwsHashrWorkerPolicy.json` contains sample policy for the `hashr.worker` account.
+
+The `hashr_setup.sh` is a script that helps create EC2 instances. Edit `hashr_setup.sh` and review and update the following fields as required:
+- `AWS_PROFILE`
+- `AWS_REGION`
+- `SECURITY_SOURCE_CIDR`
+- `WORKER_AWS_CONFIG_FILE`
+
+**Note**: The file specified `WORKER_AWS_CONFIG_FILE` must exist in the directory with `hashr_setup.sh`.
+
+**Note**: The `hashr_setup.sh` must be executed from the same directory as `hashr_setup.sh`.
+
+Run the following commands to create and set up the EC2 instances.
+
+```shell
+$ git clone https://github.com/google/hashr
+$ cd hashr/scripts/aws
+$ aws configure
+$ cp -r ~/.aws ./
+$ tar -zcf hashr.uploader.tar.gz .aws
+$ hash_setup.sh setup
+```
+
 ##### HashR AWS Importer Workflow
 
 AWS importer takes the following high level steps:

@@ -1,0 +1,52 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DescribeJob",
+                "s3:ListBucket",
+                "s3:DeleteObject",
+                "s3:GetBucketLocation",
+                "s3:GetObjectVersion"
+            ],
+            "Resource": [
+                "arn:aws:s3:::hashr-bucket",
+                "arn:aws:s3:::hashr-bucket/*"
+            ]
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DetachVolume",
+                "ec2:AttachVolume",
+                "ec2:CopySnapshot",
+                "ec2:DeregisterImage",
+                "ec2:DescribeInstances",
+                "ec2:DescribeTags",
+                "ec2:DescribeSnapshotAttribute",
+                "ec2:DescribeInstanceAttribute",
+                "s3:ListJobs",
+                "ec2:CopyImage",
+                "ec2:DescribeSnapshots",
+                "ec2:DescribeVolumeAttribute",
+                "ec2:CreateVolume",
+                "ec2:DescribeImages",
+                "ec2:DeleteVolume",
+                "ec2:DescribeVolumeStatus",
+                "ec2:CreateDefaultSubnet",
+                "ec2:DescribeAvailabilityZones",
+                "ec2:DescribeImageAttribute",
+                "ec2:DescribeVolumes",
+                "ec2:CreateSnapshot",
+                "ec2:DescribeInstanceTypes",
+                "ec2:DescribeInstanceStatus"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Download hashr-archive from github
+HASHR_ARCHIVE_SRC=https://raw.githubusercontent.com/google/hashr/main/scripts/hashr-archive
+
+wget -O /tmp/hashr-archive ${HASHR_ARCHIVE_SRC}
+
+sudo mv /tmp/hashr-archive /usr/local/sbin/hashr-archive
+sudo chmod +x /usr/local/sbin/hashr-archive
+
+# Creating data directory
+sudo mkdir -p /data
+sudo chown -R $USER /data
+
