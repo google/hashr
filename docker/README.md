@@ -92,6 +92,7 @@ Run HashR using the `iso9660` importer and export results to PostgreSQL:
 
 ```shell
 docker run -it \
+  --privileged \
   --network hashr_net \
   -v ${pwd}/ISO:/data/iso \
   us-docker.pkg.dev/osdfir-registry/hashr/release/hashr \
@@ -124,3 +125,33 @@ docker run -it \
   -exporters postgres
 ```
 
+### Debugging
+
+Here are some known issues that you can run into when using hashr with docker.
+
+#### Folder: permission denied
+
+If you get a permission error from hashr when working with docker volumes ensure
+that the folder you are mapping into the container has the same group id as the
+hashr group inside the container. Most likely this will be the `1000`. To change
+the group, run:
+
+`sudo chown -R :1000 <DIR>`
+
+#### mount: permission denied
+
+Some importers need to mount the provided file (e.g. ISO files). This is not
+supported inside the docker container by default. To workaround this issue, use
+the `--privileged` flag with your `docker run` command.
+
+#### Debugging inside the container
+
+To debug problems inside the hashr container start an interactive shell like
+with the following command:
+
+```
+docker run -it \
+  --network hashr_net \
+  --entrypoint=/bin/bash \
+  us-docker.pkg.dev/osdfir-registry/hashr/release/hashr
+```
