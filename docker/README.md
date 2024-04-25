@@ -107,7 +107,7 @@ docker run -it \
   -exporters postgres
 ```
 
-Run hashr using the `deb` importer and export results to PostgreSQL:
+Run HashR using the `deb` importer and export results to PostgreSQL:
 
 ```shell
 docker run -it \
@@ -125,15 +125,36 @@ docker run -it \
   -exporters postgres
 ```
 
+Run HashR using the `GCP`importer and export results to PostgreSQL:
+
+```shell
+docker run -it \
+  --network hashr_net \
+  -v ${pwd}/hashr-sa-private-key.json:/creds/hashr-sa-private-key.json \
+  -e GOOGLE_APPLICATION_CREDENTIALS='/creds/hashr-sa-private-key.json' \
+  us-docker.pkg.dev/osdfir-registry/hashr/release/hashr \
+  -storage postgres \
+    -postgres_host hashr_postgresql \
+    -postgres_port 5432 \
+    -postgres_user hashr \
+    -postgres_password hashr \
+    -postgres_db hashr \
+  -importers GCP \
+    -gcp_projects debian-cloud,centos-cloud,rhel-cloud \
+    -hashr_gcp_project <GCP PROJECT> \
+    -hashr_gcs_bucket <GCS BUCKET> \
+  -exporters postgres
+```
+
 ### Debugging
 
-Here are some known issues that you can run into when using hashr with docker.
+Here are some known issues that you can run into when using HashR with docker.
 
 #### Folder: permission denied
 
-If you get a permission error from hashr when working with docker volumes ensure
+If you get a permission error from HashR when working with docker volumes ensure
 that the folder you are mapping into the container has the same group id as the
-hashr group inside the container. Most likely this will be the `1000`. To change
+HashR group inside the container. Most likely this will be the `1000`. To change
 the group, run:
 
 `sudo chown -R :1000 <DIR>`
@@ -146,7 +167,7 @@ the `--privileged` flag with your `docker run` command.
 
 #### Debugging inside the container
 
-To debug problems inside the hashr container start an interactive shell like
+To debug problems inside the HashR container start an interactive shell like
 with the following command:
 
 ```
@@ -155,3 +176,10 @@ docker run -it \
   --entrypoint=/bin/bash \
   us-docker.pkg.dev/osdfir-registry/hashr/release/hashr
 ```
+
+#### Logging output
+
+For debugging purposes you can send logging output to stderr by using the
+`---logtostderr=1` flag.
+
+General hashr logs its output to `/tmp/hashr.INFO`.

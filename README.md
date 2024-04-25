@@ -92,6 +92,12 @@ go test -timeout 2m ./...
 
 ## Setting up HashR
 
+### HashR in OSDFIR Infrastructure
+
+You can deploy HashR as part of the [OSDFIR Infrastructure project](https://github.com/google/osdfir-infrastructure/tree/main/charts/hashr)
+This deployment will run HashR as kubernetes cronjobs and allows for an easy
+integration with Timesketch.
+
 ### HashR using docker
 
 To run HashR in a docker container visit the [docker specific guide](docker/README.md)
@@ -210,6 +216,10 @@ In order to specify which importer you want to run you should use the `-importer
 
 #### GCP (Google Cloud Platform)
 
+```shell
+-importers GCP
+```
+
 This importer can extract files from GCP disk [images](https://cloud.google.com/compute/docs/images). This is done in few steps:
 
 1. Check for new images in the target project (e.g. ubuntu-os-cloud)
@@ -242,7 +252,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=~/hashr-sa-private-key.json
 Step 4: Create GCS bucket that will be used to store disk images in .tar.gz format, set *<project_name>* to your project name and  *<gcs_bucket_name>* to your project new GCS bucket name:
 
 ``` shell
-gsutil mb -p project_name> gs://<gcs_bucket_name>
+gsutil mb -p <project_name> gs://<gcs_bucket_name>
 ```
 
 Step 5: Make the service account admin of this bucket:
@@ -255,13 +265,21 @@ gcloud services enable compute.googleapis.com cloudbuild.googleapis.com
 ```
 Step 7: Create IAM role and assign it required permissions:
 ``` shell
-gcloud iam roles create hashr --project=<project_name> --title=hashr --description="Permissions required to run hashR" --permissions compute.images.create compute.images.delete compute.globalOperations.ge
+gcloud iam roles create hashr --project=<project_name> --title=hashr --description="Permissions required to run hashR" --permissions compute.images.create,compute.images.delete,compute.globalOperations.get
 ```
 Step 8: Bind IAM role to the service account:
 ``` shell
 gcloud projects add-iam-policy-binding <project_name> --member="serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com" --role="projects/<project_name>/roles/hashr"
 ```
-Step Grant service accounts access required to run Cloud Build, make sure the change the *<project_name>* and *<project_id>* values:
+Step 9a: Enable the cloudbuild API
+``` shell
+gcloud services enable cloudbuild.googleapis.com --project <project_name>
+```
+Step 9b: Get your project_number
+```shell
+gcloud projects list --filter="mlegin-testing-things" --format="value(PROJECT_NUMBER)"
+```
+Step 9c: Grant service accounts access required to run Cloud Build, make sure the change the *<project_name>* and *<project_number>* values:
 ``` shell
 gcloud projects add-iam-policy-binding <project_name> --member='serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com' --role='roles/storage.admin'
 
@@ -277,41 +295,40 @@ gcloud projects add-iam-policy-binding <project_name> \
   --member='serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com' \
   --role='roles/cloudbuild.builds.editor'
 
-
 gcloud projects add-iam-policy-binding <project_name> \
-   --member='serviceAccount:<project_id>@cloudbuild.gserviceaccount.com' \
+   --member='serviceAccount:<project_number>@cloudbuild.gserviceaccount.com' \
    --role='roles/compute.admin'
 
 gcloud projects add-iam-policy-binding <project_name> \
-   --member='serviceAccount:<project_id>@cloudbuild.gserviceaccount.com' \
+   --member='serviceAccount:<project_number>@cloudbuild.gserviceaccount.com' \
    --role='roles/iam.serviceAccountUser'
 
 gcloud projects add-iam-policy-binding <project_name> \
-   --member='serviceAccount:<project_id>@cloudbuild.gserviceaccount.com' \
+   --member='serviceAccount:<project_number>@cloudbuild.gserviceaccount.com' \
    --role='roles/iam.serviceAccountTokenCreator'
 
 gcloud projects add-iam-policy-binding <project_name> \
-   --member='serviceAccount:<project_id>@cloudbuild.gserviceaccount.com' \
+   --member='serviceAccount:<project_number>@cloudbuild.gserviceaccount.com' \
    --role='roles/compute.networkUser'
 
 gcloud projects add-iam-policy-binding <project_name> \
-  --member='serviceAccount:<project_id>-compute@developer.gserviceaccount.com' \
+  --member='serviceAccount:<project_number>-compute@developer.gserviceaccount.com' \
   --role='roles/compute.storageAdmin'
 
 gcloud projects add-iam-policy-binding <project_name> \
-  --member='serviceAccount:<project_id>-compute@developer.gserviceaccount.com' \
+  --member='serviceAccount:<project_number>-compute@developer.gserviceaccount.com' \
   --role='roles/storage.objectViewer'
 
 gcloud projects add-iam-policy-binding <project_name> \
-  --member='serviceAccount:<project_id>-compute@developer.gserviceaccount.com' \
+  --member='serviceAccount:<project_number>-compute@developer.gserviceaccount.com' \
   --role='roles/storage.objectAdmin'
 ```
 
 To use this importer you need to specify the following flag(s):
 
-1. `-gcpProjects` which is a comma separated list of cloud projects containing disk images. If you'd like to import public images take a look [here](https://cloud.google.com/compute/docs/images/os-details#general-info)
-1. `-hashrGCPProject` GCP project that will be used to store copy of disk images for processing and also run Cloud Build
-1. `-hashrGCSBucket` GCS bucket that will be used to store output of Cloud Build (disk images in .tar.gz format)
+1. `-gcp_projects` which is a comma separated list of cloud projects containing disk images. If you'd like to import public images take a look [here](https://cloud.google.com/compute/docs/images/os-details#general-info)
+1. `-hashr_gcp_project` GCP project that will be used to store copy of disk images for processing and also run Cloud Build
+1. `-hashr_gcs_bucket` GCS bucket that will be used to store output of Cloud Build (disk images in .tar.gz format)
 
 #### AWS
 
