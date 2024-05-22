@@ -52,7 +52,7 @@ import (
 
 var (
 	processingWorkerCount  = flag.Int("processing_worker_count", 2, "Number of processing workers.")
-	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s,%s,%s,%s", gcp.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName, zip.RepoName, gcr.RepoName, iso9660.RepoName))
+	importersToRun         = flag.String("importers", strings.Join([]string{}, ","), fmt.Sprintf("Importers to be run: %s,%s,%s,%s,%s,%s,%s,%s,%s,%s", gcp.RepoName, awsImporter.RepoName, targz.RepoName, windows.RepoName, wsus.RepoName, deb.RepoName, rpm.RepoName, zip.RepoName, gcr.RepoName, iso9660.RepoName))
 	exportersToRun         = flag.String("exporters", strings.Join([]string{}, ","), fmt.Sprintf("Exporters to be run: %s,%s", gcpExporter.Name, postgresExporter.Name))
 	jobStorage             = flag.String("storage", "", "Storage that should be used for storing data about processing jobs, can have one of the two values: postgres, cloudspanner")
 	cacheDir               = flag.String("cache_dir", "/tmp/", "Path to cache dir used to store local cache.")
