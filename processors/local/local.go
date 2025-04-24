@@ -77,6 +77,6 @@ func (p *Processor) ImageExport(sourcePath string) (string, error) {
 }
 
 func inDockerContainer() bool {
-	_, err := shellCommand("ls", "/.dockerenv")
+	_, err := shellCommand("which", "image_export.py")
 	return err == nil
 }
