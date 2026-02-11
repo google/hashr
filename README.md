@@ -252,12 +252,12 @@ export GOOGLE_APPLICATION_CREDENTIALS=~/hashr-sa-private-key.json
 Step 4: Create GCS bucket that will be used to store disk images in .tar.gz format, set *<project_name>* to your project name and  *<gcs_bucket_name>* to your project new GCS bucket name:
 
 ``` shell
-gsutil mb -p <project_name> gs://<gcs_bucket_name>
+gcloud storage buckets create gs://<gcs_bucket_name> --project=<project_name>
 ```
 
 Step 5: Make the service account admin of this bucket:
 ``` shell
-gsutil iam ch serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com:objectAdmin gs://<gcs_bucket_name>
+gcloud storage buckets add-iam-policy-binding gs://<gcs_bucket_name> --member="serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com" --role="roles/storage.objectAdmin"
 ```
 Step 6: Enable Compute API:
 ``` shell
@@ -466,7 +466,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=~/hashr-sa-private-key.json
 Step 4: Grant hashR service account key required permissions to access given GCR repository.
 
 ``` shell
-gsutil iam ch serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com:objectViewer gs://artifacts.<project_name_hosting_gcr_repo>.appspot.com
+gcloud storage buckets add-iam-policy-binding gs://artifacts.<project_name_hosting_gcr_repo>.appspot.com --member="serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com" --role="roles/storage.objectViewer"
 ```
 
 To use this importer you need to specify the following flag(s):
@@ -493,7 +493,7 @@ This importer utilizes 7z to recursively extract contents of Windows Update pack
 1. Set up GCE VM running Windows Server in hashr GCP project.
 1. Configure it with WSUS role, select Windows Update packages that you'd like to process
 1. Configure WSUS to automatically approve and download updates to local storage
-1. Set up a Windows task to automatically sync content of the local storage to the GCS bucket: `gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/` (remember to adjust the paths)
+1. Set up a Windows task to automatically sync content of the local storage to the GCS bucket: `gcloud storage rsync --recursive D:/WSUS/WsusContent gs://hashr-wsus/` (remember to adjust the paths)
 1. If you'd like to have the filename of the update package (which usually contains KB number) as the ID (by default it's sha1, that's how MS stores WSUS updates) and its description this is something that can be dumped from the internal WID WSUS database. You can use the following Power Shell script and run it as a task:
 
 ```
@@ -521,7 +521,7 @@ $DataSet = New-Object System.Data.DataSet
 $SqlAdapter.Fill($DataSet)
 $DataSet.Tables[0] | export-csv -Delimiter $delimiter -Path "D:\WSUS\WsusContent\export.csv" -NoTypeInformation
 
-gsutil -m rsync -r D:/WSUS/WsusContent gs://hashr-wsus/
+gcloud storage rsync --recursive D:/WSUS/WsusContent gs://hashr-wsus/
 ```
 
 This will dump the relevant information from WSUS DB, store it in the `export.csv` file and sync the contents of the WSUS folder with GCS bucket. WSUS importer will check if `export.csv` file is present in the root of the WSUS repo, if so it will use it.
@@ -589,12 +589,12 @@ If you'd like to upload the extracted files to GCS you need to create the GCS bu
 
 Step 1: Make the service account admin of this bucket:
 ``` shell
-gsutil mb -p project_name> gs://<gcs_bucket_name>
+gcloud storage buckets create gs://<gcs_bucket_name> --project=project_name>
 ```
 
 Step 2: Make the service account admin of this bucket:
 ``` shell
-gsutil iam ch serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com:objectAdmin gs://<gcs_bucket_name>
+gcloud storage buckets add-iam-policy-binding gs://<gcs_bucket_name> --member="serviceAccount:hashr-sa@<project_name>.iam.gserviceaccount.com" --role="roles/storage.objectAdmin"
 ```
 
 To use this exporter you need to provide the following flags: `-exporters GCP -gcp_exporter_gcs_bucket <gcs_bucket_name>`
